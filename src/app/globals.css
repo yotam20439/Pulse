@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/**
+ * Design direction — "instrument panel".
+ * The interface stays graphite and quiet so the one saturated colour on screen
+ * is the brand you are currently looking at: --brand is re-bound per brand from
+ * `brands.accent_color`, so switching brands re-tints the rail, the active nav
+ * item, and the primary series in every chart. Numbers are set in a mono face
+ * with tabular figures, so columns of metrics line up digit-for-digit.
+ */
+
+:root {
+  --canvas: #f7f7f8;
+  --surface: #ffffff;
+  --surface-sunken: #f1f1f3;
+  --ink: #12141a;
+  --ink-soft: #3b3f4b;
+  --muted: #6b6e7b;
+  --line: #e4e4e8;
+  --line-strong: #cfd0d6;
+
+  /* Overridden inline per brand — see BrandThemeProvider. */
+  --brand: #6d4aff;
+  --brand-contrast: #ffffff;
+
+  --positive: #0f9d6e;
+  --warning: #c77700;
+  --critical: #d0402b;
+
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every metric, axis label, and index score. Tabular so columns align. */
+  .tnum {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.01em;
+  }
+
+  /* Small caps eyebrow used for section labels and table headers. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

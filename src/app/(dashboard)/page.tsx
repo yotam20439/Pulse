@@ -1,0 +1,96 @@
+import { desc, eq, inArray } from "drizzle-orm";
+import Link from "next/link";
+
+import { db } from "@/db";
+import { brands, campaigns } from "@/db/schema";
+import { accessibleBrandIds, requireUser } from "@/lib/rbac";
+import { formatMoney } from "@/lib/utils";
+
+export default async function OverviewPage() {
+  const user = await requireUser();
+  const ids = accessibleBrandIds(user);
+
+  const rows =
+    ids !== null && ids.length === 0
+      ? []
+      : await db
+          .select({
+            id: campaigns.id,
+            name: campaigns.name,
+            status: campaigns.status,
+            budget: campaigns.budget,
+            currency: campaigns.currency,
+            brandName: brands.name,
+            accent: brands.accentColor,
+          })
+          .from(campaigns)
+          .innerJoin(brands, eq(campaigns.brandId, brands.id))
+          .where(ids === null ? undefined : inArray(campaigns.brandId, ids))
+          .orderBy(desc(campaigns.startDate))
+          .limit(20);
+
+  if (rows.length === 0) {
+    return (
+      <div className="max-w-md">
+        <h1 className="text-2xl font-semibold tracking-tight">No campaigns yet</h1>
+        <p className="mt-2 text-sm text-muted">
+          Campaigns appear here once a brand you can access has one. Ask an admin for brand
+          access, or create the first campaign.
+        </p>
+        <Link
+          href="/campaigns/new"
+          className="mt-5 inline-flex h-9 items-center rounded-md bg-brand px-4 text-sm font-medium text-brand-contrast"
+        >
+          Create campaign
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <p className="eyebrow">Across {new Set(rows.map((r) => r.brandName)).size} brands</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Recent campaigns</h1>
+      </header>
+
+      <div className="overflow-hidden rounded-lg border border-line bg-surface">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-line">
+              <th className="eyebrow px-4 py-3 text-left font-normal">Campaign</th>
+              <th className="eyebrow px-4 py-3 text-left font-normal">Brand</th>
+              <th className="eyebrow px-4 py-3 text-left font-normal">Status</th>
+              <th className="eyebrow px-4 py-3 text-right font-normal">Budget</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b border-line last:border-0 hover:bg-sunken">
+                <td className="px-4 py-3">
+                  <Link href={`/campaigns/${r.id}`} className="font-medium hover:underline">
+                    {r.name}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-ink-soft">
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="size-2 rounded-full"
+                      style={{ background: r.accent }}
+                    />
+                    {r.brandName}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-muted">{r.status.toLowerCase()}</td>
+                <td className="tnum px-4 py-3 text-right">
+                  {formatMoney(r.budget, r.currency)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
