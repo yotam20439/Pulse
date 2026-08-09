@@ -41,7 +41,15 @@ export const ENGAGEMENT_WEIGHT = {
   clicks: 8,
 } as const;
 
-export type EngagementCounts = Partial<Record<keyof typeof ENGAGEMENT_WEIGHT, number>>;
+/**
+ * Counts straight off a metrics row. Values are `number | null | undefined`
+ * because every metric column is nullable — a platform that doesn't report
+ * saves gives null, which is meaningfully different from a reported zero.
+ * Every read below coalesces to 0, so nulls are safe here.
+ */
+export type EngagementCounts = Partial<
+  Record<keyof typeof ENGAGEMENT_WEIGHT, number | null | undefined>
+>;
 
 /* -------------------------------------------------------------------------- */
 /*  Primitives                                                                 */

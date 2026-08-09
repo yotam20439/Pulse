@@ -31,14 +31,17 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    uid?: string;
-    systemRole?: SystemRole;
-    brands?: Record<string, BrandRole>;
-    permsRefreshedAt?: number;
-  }
-}
+/**
+ * Shape of the extra data we keep on the JWT. Deliberately not a
+ * `declare module "next-auth/jwt"` augmentation: that subpath moves between
+ * v5 betas, and a missing augmentation target is a hard build failure.
+ */
+type AppToken = {
+  uid?: string;
+  systemRole?: SystemRole;
+  brands?: Record<string, BrandRole>;
+  permsRefreshedAt?: number;
+};
 
 async function loadPermissions(userId: string) {
   const [user] = await db
@@ -81,23 +84,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async jwt({ token, user, trigger }) {
-      if (user?.id) token.uid = user.id;
-      if (!token.uid) return token;
+      const t = token as typeof token & AppToken;
+      if (user?.id) t.uid = user.id;
+      if (!t.uid) return t;
 
-      const stale = Date.now() - (token.permsRefreshedAt ?? 0) > PERMISSIONS_TTL_MS;
+      const stale = Date.now() - (t.permsRefreshedAt ?? 0) > PERMISSIONS_TTL_MS;
       if (Boolean(user) || trigger === "update" || stale) {
-        const perms = await loadPermissions(token.uid);
-        token.systemRole = perms.systemRole;
-        token.brands = perms.brands;
-        token.permsRefreshedAt = Date.now();
+        const perms = await loadPermissions(t.uid);
+        t.systemRole = perms.systemRole;
+        t.brands = perms.brands;
+        t.permsRefreshedAt = Date.now();
       }
-      return token;
+      return t;
     },
 
     async session({ session, token }) {
-      session.user.id = token.uid ?? "";
-      session.user.systemRole = token.systemRole ?? "STAFF";
-      session.user.brands = token.brands ?? {};
+      const t = token as typeof token & AppToken;
+      session.user.id = t.uid ?? "";
+      session.user.systemRole = t.systemRole ?? "STAFF";
+      session.user.brands = t.brands ?? {};
       return session;
     },
   },
