@@ -12,6 +12,7 @@
  */
 import "dotenv/config";
 import { sql } from "drizzle-orm";
+import { hashSync } from "bcryptjs";
 
 import { db } from "./index";
 import {
@@ -50,6 +51,7 @@ function mulberry32(seed: number) {
   };
 }
 const rand = mulberry32(20260809);
+const SEED_PASSWORD = "pulse2026";
 const int = (min: number, max: number) => Math.floor(rand() * (max - min + 1)) + min;
 const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
 const dayOffset = (days: number) => {
@@ -178,6 +180,7 @@ async function main() {
         name: p.name,
         email: p.email,
         systemRole: p.systemRole,
+        passwordHash: hashSync(SEED_PASSWORD, 10),
         emailVerified: dayOffset(-90),
       })),
     )

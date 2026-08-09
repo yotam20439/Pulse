@@ -106,6 +106,7 @@ export const users = pgTable("users", {
   email: text("email").notNull(),
   emailVerified: timestamp("email_verified", { withTimezone: true }),
   image: text("image"),
+  passwordHash: text("password_hash"),
   systemRole: systemRole("system_role").notNull().default("STAFF"),
   isActive: boolean("is_active").notNull().default(true),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),

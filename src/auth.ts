@@ -1,18 +1,11 @@
 import NextAuth from "next-auth";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import Credentials from "next-auth/providers/credentials";
+import { compare } from "bcryptjs";
 import { eq } from "drizzle-orm";
 
 import { authConfig } from "./auth.config";
 import { db } from "./db";
-import {
-  accounts,
-  brandMembers,
-  sessions,
-  users,
-  verificationTokens,
-  type BrandRole,
-  type SystemRole,
-} from "./db/schema";
+import { brandMembers, users, type BrandRole, type SystemRole } from "./db/schema";
 
 /** How long a token may cache brand permissions before re-reading the DB. */
 const PERMISSIONS_TTL_MS = 5 * 60 * 1000;
@@ -45,7 +38,7 @@ type AppToken = {
 
 async function loadPermissions(userId: string) {
   const [user] = await db
-    .select({ systemRole: users.systemRole, isActive: users.isActive })
+    .select({ systemRole: users.systemRole })
     .from(users)
     .where(eq(users.id, userId));
 
@@ -56,32 +49,48 @@ async function loadPermissions(userId: string) {
 
   return {
     systemRole: (user?.systemRole ?? "STAFF") as SystemRole,
-    isActive: user?.isActive ?? false,
     brands: Object.fromEntries(grants.map((g) => [g.brandId, g.role])) as Record<string, BrandRole>,
   };
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
+
+  /**
+   * Email + password, checked against our own users table.
+   *
+   * No adapter is configured: with the credentials provider and JWT sessions,
+   * Auth.js never writes users, accounts, or sessions itself — this app
+   * provisions accounts through admin screens instead. That also removes the
+   * adapter's module-load-time inspection of the database client, which was a
+   * reliable source of build failures.
+   */
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = String(credentials?.email ?? "").trim().toLowerCase();
+        const password = String(credentials?.password ?? "");
+        if (!email || !password) return null;
+
+        const [user] = await db.select().from(users).where(eq(users.email, email));
+
+        // One generic failure for every reason — wrong password, unknown
+        // address, deactivated account. Distinguishing them tells an attacker
+        // which emails are real.
+        if (!user || !user.isActive || !user.passwordHash) return null;
+        if (!(await compare(password, user.passwordHash))) return null;
+
+        return { id: user.id, email: user.email, name: user.name, image: user.image };
+      },
+    }),
+  ],
+
   callbacks: {
     ...authConfig.callbacks,
-
-    // Users are provisioned by an admin, not self-served: an unknown or
-    // deactivated address is turned away at the door.
-    async signIn({ user }) {
-      if (!user.email) return false;
-      const [existing] = await db
-        .select({ isActive: users.isActive })
-        .from(users)
-        .where(eq(users.email, user.email));
-      return existing ? existing.isActive : false;
-    },
 
     async jwt({ token, user, trigger }) {
       const t = token as typeof token & AppToken;
@@ -106,13 +115,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+
   events: {
     async signIn({ user }) {
       if (user.id) {
-        await db
-          .update(users)
-          .set({ lastSeenAt: new Date() })
-          .where(eq(users.id, user.id));
+        await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user.id));
       }
     },
   },

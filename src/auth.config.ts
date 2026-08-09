@@ -1,5 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
-import Google from "next-auth/providers/google";
+
 
 /**
  * Edge-safe half of the Auth.js config: no database imports, no Node APIs.
@@ -7,7 +7,7 @@ import Google from "next-auth/providers/google";
  * runs on the edge; `src/auth.ts` extends it with the Drizzle adapter.
  */
 export const authConfig = {
-  providers: [Google],
+  providers: [],
   session: {
     // JWT rather than database sessions, so middleware can authorise a request
     // without a DB round-trip. Brand permissions are baked into the token and
