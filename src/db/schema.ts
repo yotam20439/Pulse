@@ -58,6 +58,7 @@ export const postType = pgEnum("post_type", [
 
 export const campaignStatus = pgEnum("campaign_status", [
   "DRAFT",
+  "READY",
   "SCHEDULED",
   "ACTIVE",
   "PAUSED",
@@ -152,6 +153,9 @@ export const brands = pgTable("brands", {
   /** Hex accent used to tint the brand's dashboard. */
   accentColor: text("accent_color").notNull().default("#6D4AFF"),
   industry: text("industry"),
+  /** Person accountable for this brand. Shown everywhere the brand appears. */
+  ownerId: uuid("owner_id"),
+  notes: text("notes"),
   /** Follower/impression baseline used to normalise the Prominence Index. */
   baselineMonthlyImpressions: integer("baseline_monthly_impressions"),
   isActive: boolean("is_active").notNull().default(true),
@@ -227,6 +231,9 @@ export const campaigns = pgTable("campaigns", {
     utmCampaign?: string;
     landingUrls?: string[];
   }>().notNull().default({}),
+  /** Who runs this campaign day to day — distinct from who created the row. */
+  ownerId: uuid("owner_id").references(() => users.id, { onDelete: "set null" }),
+  notes: text("notes"),
   createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

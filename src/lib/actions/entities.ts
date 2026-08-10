@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -56,6 +56,9 @@ export async function createBrand(_prev: ActionState, formData: FormData): Promi
       slug,
       industry: String(formData.get("industry") ?? "").trim() || null,
       accentColor: String(formData.get("accentColor") ?? "#6D4AFF"),
+      logoUrl: String(formData.get("logoUrl") ?? "").trim() || null,
+      ownerId: String(formData.get("ownerId") ?? "") || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
       // The Prominence Index is measured against this, so a wrong value here
       // skews every campaign the brand runs.
       baselineMonthlyImpressions: Number.isFinite(baseline) && baseline > 0 ? baseline : null,
@@ -79,6 +82,9 @@ export async function updateBrand(_prev: ActionState, formData: FormData): Promi
       name: String(formData.get("name") ?? "").trim(),
       industry: String(formData.get("industry") ?? "").trim() || null,
       accentColor: String(formData.get("accentColor") ?? "#6D4AFF"),
+      logoUrl: String(formData.get("logoUrl") ?? "").trim() || null,
+      ownerId: String(formData.get("ownerId") ?? "") || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
       baselineMonthlyImpressions: Number.isFinite(baseline) && baseline > 0 ? baseline : null,
     })
     .where(eq(brands.id, brandId));
@@ -119,6 +125,8 @@ export async function createCampaign(_prev: ActionState, formData: FormData): Pr
       endDate,
       budget: String(Number.isFinite(budget) ? budget : 0),
       currency: String(formData.get("currency") ?? "ILS"),
+      ownerId: String(formData.get("ownerId") ?? "") || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
       createdById: user.id,
       meta: {
         hashtags: String(formData.get("hashtags") ?? "")
@@ -173,6 +181,8 @@ export async function updateCampaign(_prev: ActionState, formData: FormData): Pr
       endDate: String(formData.get("endDate") ?? "") || null,
       budget: String(Number.isFinite(budget) ? budget : 0),
       currency: String(formData.get("currency") ?? "ILS"),
+      ownerId: String(formData.get("ownerId") ?? "") || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
       updatedAt: new Date(),
     })
     .where(eq(campaigns.id, campaignId));
@@ -400,4 +410,75 @@ export async function createInfluencer(
 
   revalidatePath("/influencers");
   return { ok: `Added ${displayName}.` };
+}
+
+
+/* --------------------------- brand lifecycle ------------------------------ */
+
+export async function setBrandActive(formData: FormData) {
+  const user = await requireUser();
+  if (!isSuperAdmin(user)) return;
+
+  const brandId = String(formData.get("brandId") ?? "");
+  const isActive = formData.get("isActive") === "true";
+
+  // Archiving is reversible and keeps every campaign and metric intact. It is
+  // the right answer for "we stopped working with this client", which is what
+  // people usually mean when they reach for delete.
+  await db.update(brands).set({ isActive }).where(eq(brands.id, brandId));
+  await record(user.id, brandId, isActive ? "brand.restore" : "brand.archive", "brand", brandId);
+  revalidatePath("/settings/brands");
+  revalidatePath("/", "layout");
+}
+
+export async function deleteBrand(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  if (!isSuperAdmin(user)) return { error: "Only administrators can delete brands." };
+
+  const brandId = String(formData.get("brandId") ?? "");
+  const confirmation = String(formData.get("confirm") ?? "").trim();
+
+  const [brand] = await db.select().from(brands).where(eq(brands.id, brandId));
+  if (!brand) return { error: "Brand not found." };
+
+  // Typing the name is friction on purpose: this cascades through campaigns,
+  // posts, and every metric snapshot ever collected for them.
+  if (confirmation !== brand.name) {
+    return { error: `Type the brand name exactly to confirm: ${brand.name}` };
+  }
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(campaigns)
+    .where(eq(campaigns.brandId, brandId));
+
+  if (count > 0) {
+    return {
+      error: `${brand.name} has ${count} campaigns and their metric history. Archive it instead — deletion would destroy the record permanently.`,
+    };
+  }
+
+  await db.delete(brands).where(eq(brands.id, brandId));
+  await record(user.id, null, "brand.delete", "brand", brandId, { name: brand.name });
+  revalidatePath("/settings/brands");
+  revalidatePath("/", "layout");
+  return { ok: `Deleted ${brand.name}.` };
+}
+
+export async function deleteCampaign(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const campaignId = String(formData.get("campaignId") ?? "");
+  const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, campaignId));
+  if (!campaign) return { error: "Campaign not found." };
+
+  const { user } = await requireBrandAccess(campaign.brandId, "BRAND_ADMIN");
+
+  if (String(formData.get("confirm") ?? "").trim() !== campaign.name) {
+    return { error: `Type the campaign name exactly to confirm: ${campaign.name}` };
+  }
+
+  await db.delete(campaigns).where(eq(campaigns.id, campaignId));
+  await record(user.id, campaign.brandId, "campaign.delete", "campaign", campaignId, {
+    name: campaign.name,
+  });
+  redirect(`/brands/${campaign.brandId}`);
 }

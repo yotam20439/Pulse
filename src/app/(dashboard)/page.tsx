@@ -1,6 +1,7 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 
+import { StatusPill } from "@/components/status-pill";
 import { db } from "@/db";
 import { brands, campaigns } from "@/db/schema";
 import { accessibleBrandIds, requireUser } from "@/lib/rbac";
@@ -51,7 +52,7 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="eyebrow">{dict.common.across.replace("{n}", String(new Set(rows.map((r) => r.brandName)).size))}</p>
+        <p className="eyebrow">{dict.common.across(new Set(rows.map((r) => r.brandName)).size)}</p>
         <h1 className="mt-1 text-2xl font-semibold">{dict.nav.campaigns}</h1>
       </header>
 
@@ -83,7 +84,9 @@ export default async function OverviewPage() {
                     {r.brandName}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-muted">{r.status.toLowerCase()}</td>
+                <td className="px-4 py-3">
+                  <StatusPill status={r.status} dict={dict} />
+                </td>
                 <td className="tnum px-4 py-3 text-end">
                   {formatMoney(r.budget, r.currency)}
                 </td>

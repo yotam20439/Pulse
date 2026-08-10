@@ -12,6 +12,7 @@ import {
   influencerAccounts,
   influencers,
   posts,
+  users,
 } from "@/db/schema";
 import {
   addParticipant,
@@ -19,6 +20,7 @@ import {
   setKpi,
   updateCampaign,
 } from "@/lib/actions/entities";
+import { getDictionary } from "@/lib/i18n";
 import { getCampaign } from "@/lib/queries/campaign";
 import { requireBrandAccess } from "@/lib/rbac";
 import { formatCount, formatMoney } from "@/lib/utils";
@@ -37,8 +39,9 @@ export default async function CampaignSettingsPage({
   if (!campaign) notFound();
 
   await requireBrandAccess(campaign.brandId, "EDITOR");
+  const dict = await getDictionary();
 
-  const [roster, kpis, accounts] = await Promise.all([
+  const [roster, kpis, accounts, staff] = await Promise.all([
     db
       .select({
         id: campaignInfluencers.id,
@@ -70,6 +73,12 @@ export default async function CampaignSettingsPage({
       .from(influencerAccounts)
       .innerJoin(influencers, eq(influencerAccounts.influencerId, influencers.id))
       .orderBy(asc(influencers.displayName)),
+
+    db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.isActive, true))
+      .orderBy(asc(users.email)),
   ]);
 
   const booked = new Set(roster.map((r) => `${r.handle}:${r.platform}`));
@@ -93,6 +102,8 @@ export default async function CampaignSettingsPage({
         <CampaignForm
           action={updateCampaign}
           brands={[{ id: campaign.brandId, name: campaign.brandName }]}
+          dict={dict}
+          users={staff.map((u) => ({ id: u.id, label: u.name ?? u.email }))}
           campaign={{
             id: campaign.id,
             brandId: campaign.brandId,
@@ -103,6 +114,8 @@ export default async function CampaignSettingsPage({
             endDate: campaign.endDate,
             budget: campaign.budget,
             currency: campaign.currency,
+            ownerId: campaign.ownerId,
+            notes: campaign.notes,
           }}
         />
       </section>

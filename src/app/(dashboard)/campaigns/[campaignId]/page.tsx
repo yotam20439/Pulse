@@ -9,6 +9,8 @@ import { KpiProgress } from "@/components/campaign/kpi-progress";
 import { MetricStrip } from "@/components/campaign/metric-strip";
 import { PostTable } from "@/components/campaign/post-table";
 import { TrendChart } from "@/components/charts/trend-chart";
+import { OwnerBadge } from "@/components/owner-badge";
+import { StatusPill } from "@/components/status-pill";
 import { getDictionary, getLocale } from "@/lib/i18n";
 import { generateInsights } from "@/lib/insights";
 import {
@@ -28,15 +30,6 @@ export async function generateMetadata({ params }: { params: Promise<{ campaignI
   const campaign = await getCampaign(campaignId);
   return { title: campaign?.name ?? "Campaign" };
 }
-
-const STATUS_TONE: Record<string, string> = {
-  ACTIVE: "bg-positive/10 text-positive",
-  PAUSED: "bg-warning/10 text-warning",
-  DRAFT: "bg-sunken text-muted",
-  SCHEDULED: "bg-sunken text-muted",
-  COMPLETED: "bg-sunken text-ink-soft",
-  ARCHIVED: "bg-sunken text-muted",
-};
 
 export default async function CampaignPage({
   params,
@@ -104,13 +97,7 @@ export default async function CampaignPage({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-semibold">{campaign.name}</h1>
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                  STATUS_TONE[campaign.status] ?? "bg-sunken text-muted"
-                }`}
-              >
-                {campaign.status.toLowerCase()}
-              </span>
+<StatusPill status={campaign.status} dict={dict} />
             </div>
             <p className="mt-1.5 text-sm text-muted">
               {campaign.objective ?? dict.campaign.noObjective}
@@ -121,10 +108,27 @@ export default async function CampaignPage({
               {dict.metrics.posts.toLowerCase()} · {totals.creators}{" "}
               {dict.metrics.creators.toLowerCase()}
             </p>
+            {campaign.ownerName && (
+              <div className="mt-3">
+                <OwnerBadge name={campaign.ownerName} email={campaign.ownerEmail} />
+              </div>
+            )}
+            {campaign.notes && (
+              <p className="mt-3 max-w-2xl rounded-md border-s-2 border-line-strong bg-sunken/60 px-3 py-2 text-sm text-ink-soft">
+                {campaign.notes}
+              </p>
+            )}
           </div>
 
-          {role !== "VIEWER" && (
-            <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/api/campaigns/${campaign.id}/export`}
+              className="h-9 rounded-md border border-line bg-surface px-4 text-sm font-medium leading-9 transition-colors hover:bg-sunken"
+            >
+              {dict.brand.export}
+            </a>
+            {role !== "VIEWER" && (
+            <>
               <Link
                 href={`/campaigns/${campaign.id}/posts/new`}
                 className="h-9 rounded-md border border-line bg-surface px-4 text-sm font-medium leading-9 transition-colors hover:bg-sunken"
@@ -137,8 +141,9 @@ export default async function CampaignPage({
               >
                 {dict.campaign.edit}
               </Link>
-            </div>
-          )}
+            </>
+            )}
+          </div>
         </div>
       </header>
 

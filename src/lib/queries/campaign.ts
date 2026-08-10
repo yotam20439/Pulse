@@ -13,6 +13,7 @@ import {
   insights,
   metricsSnapshots,
   posts,
+  users,
 } from "@/db/schema";
 import {
   effectivenessIndex,
@@ -45,13 +46,19 @@ export async function getCampaign(campaignId: string) {
       budget: campaigns.budget,
       currency: campaigns.currency,
       meta: campaigns.meta,
+      notes: campaigns.notes,
+      ownerId: campaigns.ownerId,
+      ownerName: users.name,
+      ownerEmail: users.email,
       brandId: brands.id,
       brandName: brands.name,
       brandAccent: brands.accentColor,
       brandBaseline: brands.baselineMonthlyImpressions,
+      brandLogo: brands.logoUrl,
     })
     .from(campaigns)
     .innerJoin(brands, eq(campaigns.brandId, brands.id))
+    .leftJoin(users, eq(campaigns.ownerId, users.id))
     .where(eq(campaigns.id, campaignId));
   return row ?? null;
 }

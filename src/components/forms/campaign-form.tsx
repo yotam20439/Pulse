@@ -2,20 +2,26 @@
 
 import { useActionState } from "react";
 
-import { Field, FormMessage, Input, Select, SubmitButton } from "@/components/ui/form";
+import { CAMPAIGN_STATUSES } from "@/components/status-pill";
+import { Field, FormMessage, Input, Select, SubmitButton, Textarea } from "@/components/ui/form";
+import type { Dictionary } from "@/lib/i18n";
 import type { ActionState } from "@/lib/actions/entities";
 
 type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
 
-const STATUSES = ["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "COMPLETED", "ARCHIVED"];
+
 
 export function CampaignForm({
   action,
   brands,
+  users,
+  dict,
   campaign,
 }: {
   action: Action;
   brands: { id: string; name: string }[];
+  users: { id: string; label: string }[];
+  dict: Dictionary;
   campaign?: {
     id: string;
     brandId: string;
@@ -26,6 +32,8 @@ export function CampaignForm({
     endDate: string | null;
     budget: string;
     currency: string;
+    ownerId: string | null;
+    notes: string | null;
   };
 }) {
   const [state, formAction] = useActionState(action, {});
@@ -100,12 +108,27 @@ export function CampaignForm({
 
         <Field label="Status">
           <Select name="status" defaultValue={campaign?.status ?? "DRAFT"}>
-            {STATUSES.map((s) => (
+            {CAMPAIGN_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.toLowerCase()}
+                {dict.status[s]}
               </option>
             ))}
           </Select>
+        </Field>
+
+        <Field label={dict.brand.owner} hint="Who runs this day to day.">
+          <Select name="ownerId" defaultValue={campaign?.ownerId ?? ""}>
+            <option value="">{dict.brand.unassigned}</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label={dict.brand.notes} className="sm:col-span-2">
+          <Textarea name="notes" defaultValue={campaign?.notes ?? ""} rows={2} />
         </Field>
 
         {!editing && (

@@ -136,7 +136,7 @@ const CREATORS = [
 const CAMPAIGN_BLUEPRINTS = [
   { brand: "halva", name: "Halva Summer Jars", status: "COMPLETED", start: -75, end: -45, budget: 68_000, objective: "Drive trial of the new jar format" },
   { brand: "halva", name: "Back to School Snack Box", status: "ACTIVE", start: -18, end: 12, budget: 92_000, objective: "Own the lunchbox conversation" },
-  { brand: "halva", name: "Ramadan Gifting", status: "DRAFT", start: 40, end: 70, budget: 55_000, objective: "Seasonal gifting awareness" },
+  { brand: "halva", name: "Ramadan Gifting", status: "READY", start: 40, end: 70, budget: 55_000, objective: "Seasonal gifting awareness" },
   { brand: "terra", name: "Trail Series Launch", status: "ACTIVE", start: -26, end: 6, budget: 240_000, objective: "Launch the Trail 2 shoe" },
   { brand: "terra", name: "Winter Layers", status: "COMPLETED", start: -120, end: -80, budget: 150_000, objective: "Clear winter inventory" },
   { brand: "terra", name: "Run Club Ambassadors", status: "PAUSED", start: -40, end: 20, budget: 60_000, objective: "Build the local run-club community" },
@@ -188,6 +188,20 @@ async function main() {
     )
     .returning();
   const admin = userRows[0];
+
+  // Person in charge per brand: the staff member with the strongest grant.
+  const OWNER_BY_SLUG: Record<string, string> = {
+    halva: "omer@agency.test",
+    terra: "maya@agency.test",
+    nimbus: "maya@agency.test",
+  };
+  for (const [slug, email] of Object.entries(OWNER_BY_SLUG)) {
+    const owner = userRows.find((u) => u.email === email);
+    const brand = brandBySlug.get(slug);
+    if (owner && brand) {
+      await db.update(brands).set({ ownerId: owner.id }).where(sql`${brands.id} = ${brand.id}`);
+    }
+  }
 
   const grants = PEOPLE.flatMap((p, i) =>
     p.grants.map(([slug, role]) => ({

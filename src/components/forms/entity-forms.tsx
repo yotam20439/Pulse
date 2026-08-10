@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
-import { Field, FormMessage, Input, Select, SubmitButton } from "@/components/ui/form";
+import { Field, FormMessage, Input, Select, SubmitButton, Textarea } from "@/components/ui/form";
+import { BrandMark } from "@/components/brand-mark";
+import type { Dictionary } from "@/lib/i18n";
 import type { ActionState } from "@/lib/actions/entities";
 
 type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
@@ -66,61 +68,173 @@ export function PasswordForm({ action, userId }: { action: Action; userId: strin
 
 export function BrandForm({
   action,
+  deleteAction,
+  users,
+  dict,
   brand,
 }: {
   action: Action;
+  deleteAction?: Action;
+  users: { id: string; label: string }[];
+  dict: Dictionary;
   brand?: {
     id: string;
     name: string;
     industry: string | null;
     accentColor: string;
+    logoUrl: string | null;
+    ownerId: string | null;
+    notes: string | null;
     baselineMonthlyImpressions: number | null;
   };
 }) {
   const [state, formAction] = useActionState(action, {});
+  const [logo, setLogo] = useState(brand?.logoUrl ?? "");
+  const [colour, setColour] = useState(brand?.accentColor ?? "#6D4AFF");
+  const [name, setName] = useState(brand?.name ?? "");
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-line bg-surface p-5">
-      {brand && <input type="hidden" name="brandId" value={brand.id} />}
+    <div className="space-y-4">
+      <form action={formAction} className="card space-y-5 p-5">
+        {brand && <input type="hidden" name="brandId" value={brand.id} />}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Brand name" htmlFor={`name-${brand?.id ?? "new"}`}>
-          <Input id={`name-${brand?.id ?? "new"}`} name="name" required defaultValue={brand?.name} />
-        </Field>
-        <Field label="Industry">
-          <Input name="industry" defaultValue={brand?.industry ?? ""} />
-        </Field>
-        {!brand && (
-          <Field label="Slug" hint="Left blank, it's derived from the name.">
-            <Input name="slug" placeholder="auto" />
+        {/* Live preview: the mark is what appears in the sidebar and every
+            list, so showing it while editing beats saving to find out. */}
+        <div className="flex items-center gap-3 border-b border-line pb-4">
+          <BrandMark name={name || "??"} logoUrl={logo || null} accentColor={colour} size="lg" />
+          <div className="min-w-0">
+            <p className="truncate font-medium">{name || "—"}</p>
+            <p className="text-xs text-muted">
+              {logo ? "Logo" : "Monogram fallback"}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Brand name">
+            <Input
+              name="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </Field>
-        )}
-        <Field label="Accent colour" hint="Tints this brand's dashboard and charts.">
-          <Input
-            name="accentColor"
-            type="color"
-            defaultValue={brand?.accentColor ?? "#6D4AFF"}
-            className="h-10 px-1"
-          />
-        </Field>
-        <Field
-          label="Baseline monthly impressions"
-          hint="The Prominence Index scores campaigns against this. Get it wrong and every score shifts."
-          className="sm:col-span-2"
-        >
-          <Input
-            name="baseline"
-            type="number"
-            min={0}
-            step={10000}
-            defaultValue={brand?.baselineMonthlyImpressions ?? ""}
-            placeholder="e.g. 1500000"
-          />
-        </Field>
-      </div>
+          <Field label="Industry">
+            <Input name="industry" defaultValue={brand?.industry ?? ""} />
+          </Field>
 
+          <Field label={dict.brand.logo} hint={dict.brand.logoHint} className="sm:col-span-2">
+            <Input
+              name="logoUrl"
+              type="url"
+              value={logo}
+              onChange={(e) => setLogo(e.target.value)}
+              placeholder="https://…/logo.png"
+            />
+          </Field>
+
+          <Field label={dict.brand.owner}>
+            <Select name="ownerId" defaultValue={brand?.ownerId ?? ""}>
+              <option value="">{dict.brand.unassigned}</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label="Accent colour">
+            <Input
+              name="accentColor"
+              type="color"
+              value={colour}
+              onChange={(e) => setColour(e.target.value)}
+              className="h-10 px-1"
+            />
+          </Field>
+
+          {!brand && (
+            <Field label="Slug" hint="Left blank, it's derived from the name.">
+              <Input name="slug" placeholder="auto" />
+            </Field>
+          )}
+
+          <Field
+            label="Baseline monthly impressions"
+            hint="The Prominence Index scores campaigns against this."
+            className={brand ? "sm:col-span-2" : ""}
+          >
+            <Input
+              name="baseline"
+              type="number"
+              min={0}
+              step={10000}
+              defaultValue={brand?.baselineMonthlyImpressions ?? ""}
+              placeholder="e.g. 1500000"
+            />
+          </Field>
+
+          <Field label={dict.brand.notes} className="sm:col-span-2">
+            <Textarea name="notes" defaultValue={brand?.notes ?? ""} rows={2} />
+          </Field>
+        </div>
+
+        <FormMessage error={state.error} ok={state.ok} />
+        <SubmitButton>{brand ? "Save brand" : "Create brand"}</SubmitButton>
+      </form>
+
+      {brand && deleteAction && <DeleteBrandForm action={deleteAction} brand={brand} dict={dict} />}
+    </div>
+  );
+}
+
+/**
+ * Deletion sits behind typing the brand name. It cascades through campaigns,
+ * posts, and every snapshot ever collected — a confirm dialog is too easy to
+ * click through for something with no undo.
+ */
+function DeleteBrandForm({
+  action,
+  brand,
+  dict,
+}: {
+  action: Action;
+  brand: { id: string; name: string };
+  dict: Dictionary;
+}) {
+  const [state, formAction] = useActionState(action, {});
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs text-critical hover:underline"
+      >
+        {dict.brand.delete}
+      </button>
+    );
+  }
+
+  return (
+    <form action={formAction} className="space-y-3 rounded-lg border border-critical/30 bg-surface p-4">
+      <input type="hidden" name="brandId" value={brand.id} />
+      <p className="text-sm text-ink-soft">{dict.brand.deleteBlocked}</p>
+      <Field label={`Type "${brand.name}" to confirm`}>
+        <Input name="confirm" autoComplete="off" />
+      </Field>
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>{brand ? "Save brand" : "Create brand"}</SubmitButton>
+      <div className="flex gap-2">
+        <SubmitButton variant="danger">{dict.brand.delete}</SubmitButton>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="h-9 rounded-md border border-line px-4 text-sm hover:bg-sunken"
+        >
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }

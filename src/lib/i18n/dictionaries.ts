@@ -9,9 +9,35 @@
  */
 
 export const en = {
-  locale: "en" as string,
-  dir: "ltr" as string,
+  locale: "en",
+  dir: "ltr",
   localeName: "English",
+
+  status: {
+    DRAFT: "Draft",
+    READY: "Ready to launch",
+    SCHEDULED: "Scheduled",
+    ACTIVE: "In progress",
+    PAUSED: "Paused",
+    COMPLETED: "Done",
+    ARCHIVED: "Archived",
+  },
+
+  brand: {
+    owner: "Person in charge",
+    logo: "Logo URL",
+    logoHint: "Square image works best. Leave blank for a coloured monogram.",
+    notes: "Notes",
+    archive: "Archive",
+    unarchive: "Restore",
+    delete: "Delete permanently",
+    deleteBlocked: "Delete is only possible for a brand with no campaigns. Archive it instead.",
+    archived: "Archived",
+    unassigned: "Unassigned",
+    campaignCount: "campaigns",
+    export: "Export CSV",
+    activity: "Activity",
+  },
 
   nav: {
     overview: "Overview",
@@ -89,7 +115,7 @@ export const en = {
     newCampaign: "New campaign",
     addPost: "Add post",
     edit: "Edit campaign",
-    lastDays: "Last {n} days",
+    lastDays: (n: number) => `Last ${n} days`,
     delivered: "Delivered",
     cost: "Cost",
     costPerEng: "Cost / eng.",
@@ -126,12 +152,12 @@ export const en = {
 
   common: {
     role: "your role",
-    across: "Across {n} brands",
+    across: (n: number) => `Across ${n} brands`,
     of: "of",
     all: "all",
     none: "none",
   },
-};
+} as const;
 
 export type Dictionary = typeof en;
 
@@ -139,6 +165,32 @@ export const he: Dictionary = {
   locale: "he",
   dir: "rtl",
   localeName: "עברית",
+
+  status: {
+    DRAFT: "טיוטה",
+    READY: "מוכן להשקה",
+    SCHEDULED: "מתוזמן",
+    ACTIVE: "בתהליך",
+    PAUSED: "מושהה",
+    COMPLETED: "הושלם",
+    ARCHIVED: "בארכיון",
+  },
+
+  brand: {
+    owner: "אחראי",
+    logo: "כתובת לוגו",
+    logoHint: "תמונה מרובעת עדיפה. השאירו ריק למונוגרמה צבעונית.",
+    notes: "הערות",
+    archive: "העברה לארכיון",
+    unarchive: "שחזור",
+    delete: "מחיקה לצמיתות",
+    deleteBlocked: "מחיקה אפשרית רק למותג ללא קמפיינים. העבירו לארכיון במקום.",
+    archived: "בארכיון",
+    unassigned: "לא שויך",
+    campaignCount: "קמפיינים",
+    export: "ייצוא CSV",
+    activity: "פעילות",
+  },
 
   nav: {
     overview: "סקירה",
@@ -216,7 +268,7 @@ export const he: Dictionary = {
     newCampaign: "קמפיין חדש",
     addPost: "הוספת פוסט",
     edit: "עריכת קמפיין",
-    lastDays: "{n} הימים האחרונים",
+    lastDays: (n: number) => `${n} הימים האחרונים`,
     delivered: "סופק",
     cost: "עלות",
     costPerEng: "עלות לאינטראקציה",
@@ -253,7 +305,7 @@ export const he: Dictionary = {
 
   common: {
     role: "התפקיד שלך",
-    across: "{n} מותגים",
+    across: (n: number) => `${n} מותגים`,
     of: "מתוך",
     all: "הכל",
     none: "אין",
