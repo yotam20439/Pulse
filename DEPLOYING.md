@@ -93,3 +93,44 @@ Use the **direct** (non-pooled) string for schema changes; the pooler doesn't ho
 ## Node version
 
 `package.json` targets Next 15 and React 19, which need Node 18.18+. Set Settings → General → Node.js Version to 22.x.
+
+
+## Creator profile data — what actually works
+
+Followers, average likes, and engagement rate can be fetched automatically for some platforms and not others. The app is explicit about which is which: every account shows its `statsSource` as `manual`, `api`, or `vendor`, and the creator score weights observed post metrics above anything self-reported.
+
+### Works today, free
+
+**YouTube** — one API key. Google Cloud → enable *YouTube Data API v3* → create an API key → set `YOUTUBE_API_KEY`. Reads any public channel: subscribers, and per-video likes, comments, and views from the last 10 uploads. A full refresh costs ~5 of your 10,000 daily quota units.
+
+### Works today, some setup
+
+**Instagram** — the Business Discovery endpoint reads followers and per-post likes and comments for any Business or Creator account, *without that creator authorising anything*. You need:
+
+1. Your own Instagram account switched to Business or Creator, linked to a Facebook Page
+2. A Meta app (developers.facebook.com) with the Instagram Graph API product
+3. A long-lived Page access token — 60 days, refreshable
+4. `INSTAGRAM_GRAPH_TOKEN` and `INSTAGRAM_BUSINESS_ID`
+
+Limitation: personal accounts are invisible to this endpoint. Most working creators run Creator accounts, so coverage is good but not universal.
+
+### Needs a paid vendor
+
+**TikTok, X, Facebook** — no public API returns profile stats for an account that hasn't authorised your app. TikTok's Display API requires creator OAuth, which is useless for evaluating someone you haven't signed. The realistic options are a licensed vendor (Modash, Phyllo, HypeAuditor, Creator.co) or manual entry.
+
+`src/lib/profile-collectors/vendor.ts` is a generic adapter: set the endpoint and key, map the response fields in `mapResponse`, done. Deliberately vendor-agnostic — pricing and coverage change often enough that hard-coding one is a mistake you pay for later.
+
+### Why there is no HTML scraper
+
+The obvious approach is fetching a public profile page and parsing the numbers out. It isn't built that way because:
+
+- Markup changes every few weeks, and each change silently turns follower counts into nulls or leaves stale numbers looking fine
+- Logged-out pages are rate-limited and increasingly gated behind a login wall, so it fails from a datacentre IP even when the selectors are correct
+- It breaches the terms of every platform involved, which matters when the output goes into a client invoice
+- A number you cannot source is a number you cannot defend
+
+The strongest data in the system isn't fetched from a profile at all: it's computed from posts the app tracked itself, on the creator page under *Measured from tracked posts*. Those numbers are yours, they're auditable, and no platform can take them away.
+
+### Scheduling
+
+`/api/cron/profiles` refreshes accounts not synced in 24 hours, 100 at a time. Add it under Settings → Cron Jobs once deployed, or drive it from GitHub Actions with the `CRON_SECRET` bearer token.

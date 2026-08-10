@@ -2,10 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 
-import { AccountStatsForm, AddAccountForm } from "@/components/forms/creator-account-forms";
+import {
+  AccountStatsForm,
+  AddAccountForm,
+  RefreshStatsForm,
+} from "@/components/forms/creator-account-forms";
 import { PlatformBadge } from "@/components/platform-badge";
 import { StatusPill } from "@/components/status-pill";
-import { addAccountToCreator, updateAccountStats } from "@/lib/actions/creators";
+import {
+  addAccountToCreator,
+  refreshAccountStats,
+  updateAccountStats,
+} from "@/lib/actions/creators";
+import { getProfileCollector } from "@/lib/profile-collectors";
+import { registerAllProfileCollectors } from "@/lib/profile-collectors/register";
 import { audienceTier, scoreBand } from "@/lib/creator-score";
 import { getDictionary } from "@/lib/i18n";
 import { getCreatorScore } from "@/lib/queries/creators";
@@ -26,6 +36,8 @@ export default async function CreatorPage({
   const { influencerId } = await params;
   await requireUser();
   const dict = await getDictionary();
+
+  registerAllProfileCollectors();
 
   const result = await getCreatorScore(influencerId);
   if (!result) notFound();
@@ -159,20 +171,42 @@ export default async function CreatorPage({
                   <span>ER {formatPercent(account.baselineEngagementRate)}</span>
                   <span>♥ {formatCount(account.avgLikes)}</span>
                   <span>▶ {formatCount(account.avgViews)}</span>
-                  <span className="rounded-full bg-sunken px-2 py-0.5">
+                  <span
+                    className="rounded-full bg-sunken px-2 py-0.5"
+                    title={
+                      account.statsSource === "manual"
+                        ? "Entered by hand"
+                        : "Fetched from the platform"
+                    }
+                  >
                     {account.statsSource}
+                    {account.followersSyncedAt &&
+                      ` · ${new Date(account.followersSyncedAt).toISOString().slice(0, 10)}`}
                   </span>
                 </div>
               </div>
 
-              <details className="mt-3 border-t border-line pt-3">
-                <summary className="cursor-pointer text-xs text-muted hover:text-ink">
-                  Update stats
-                </summary>
-                <div className="pt-3">
-                  <AccountStatsForm action={updateAccountStats} account={account} />
-                </div>
-              </details>
+              <div className="mt-3 space-y-3 border-t border-line pt-3">
+                <RefreshStatsForm
+                  action={refreshAccountStats}
+                  accountId={account.id}
+                  influencerId={creator.id}
+                  provider={
+                    getProfileCollector(account.platform)?.isConfigured()
+                      ? getProfileCollector(account.platform)!.source
+                      : null
+                  }
+                />
+
+                <details>
+                  <summary className="cursor-pointer text-xs text-muted hover:text-ink">
+                    Enter stats manually
+                  </summary>
+                  <div className="pt-3">
+                    <AccountStatsForm action={updateAccountStats} account={account} />
+                  </div>
+                </details>
+              </div>
             </li>
           ))}
         </ul>

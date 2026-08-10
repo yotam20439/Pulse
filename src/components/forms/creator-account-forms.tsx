@@ -81,3 +81,37 @@ export function AddAccountForm({
     </form>
   );
 }
+
+
+/** Pulls live stats from the platform for one account. */
+export function RefreshStatsForm({
+  action,
+  accountId,
+  influencerId,
+  provider,
+}: {
+  action: Action;
+  accountId: string;
+  influencerId: string;
+  /** null when no provider is configured for this platform. */
+  provider: string | null;
+}) {
+  const [state, formAction] = useActionState(action, {});
+
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="accountId" value={accountId} />
+      <input type="hidden" name="influencerId" value={influencerId} />
+      <SubmitButton variant="ghost">
+        {provider ? `Refresh from ${provider}` : "Refresh"}
+      </SubmitButton>
+      {!provider && (
+        <span className="text-xs text-muted">
+          No provider configured for this platform — see DEPLOYING.md.
+        </span>
+      )}
+      {state.error && <span className="text-xs text-warning">{state.error}</span>}
+      {state.ok && <span className="text-xs text-positive">{state.ok}</span>}
+    </form>
+  );
+}

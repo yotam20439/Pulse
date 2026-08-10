@@ -289,3 +289,35 @@ export async function removeAccount(formData: FormData) {
   await db.delete(influencerAccounts).where(eq(influencerAccounts.id, accountId));
   revalidatePath(`/influencers/${influencerId}`);
 }
+
+/**
+ * Manual refresh from the creator page. Returns the provider's own message on
+ * failure rather than a generic error — "that account is personal, so Graph
+ * can't read it" is actionable; "sync failed" is not.
+ */
+export async function refreshAccountStats(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await assertCanEditRoster();
+
+  const accountId = String(formData.get("accountId") ?? "");
+  const influencerId = String(formData.get("influencerId") ?? "");
+
+  const { syncAccount } = await import("@/lib/profile-sync");
+  const outcome = await syncAccount(accountId);
+
+  revalidatePath(`/influencers/${influencerId}`);
+
+  if (outcome.status === "updated") {
+    const delta = outcome.followerDelta;
+    return {
+      ok:
+        delta != null && delta !== 0
+          ? `Updated from the platform. Followers ${delta > 0 ? "+" : ""}${delta.toLocaleString()} since last check.`
+          : "Updated from the platform.",
+    };
+  }
+
+  return { error: outcome.reason ?? "Could not refresh." };
+}
