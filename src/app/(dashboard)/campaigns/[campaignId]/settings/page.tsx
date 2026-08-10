@@ -4,6 +4,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { ChevronLeft } from "lucide-react";
 
 import { CampaignForm } from "@/components/forms/campaign-form";
+import { CreatorLinkAdd } from "@/components/forms/creator-link-add";
 import { PlatformBadge } from "@/components/platform-badge";
 import { db } from "@/db";
 import {
@@ -14,14 +15,11 @@ import {
   posts,
   users,
 } from "@/db/schema";
-import {
-  addParticipant,
-  removeParticipant,
-  setKpi,
-  updateCampaign,
-} from "@/lib/actions/entities";
+import { addCreatorByLink } from "@/lib/actions/creators";
+import { removeParticipant, setKpi, updateCampaign } from "@/lib/actions/entities";
 import { getDictionary } from "@/lib/i18n";
 import { getCampaign } from "@/lib/queries/campaign";
+import { rankCreatorsForCampaign } from "@/lib/queries/creators";
 import { requireBrandAccess } from "@/lib/rbac";
 import { formatCount, formatMoney } from "@/lib/utils";
 
@@ -41,7 +39,7 @@ export default async function CampaignSettingsPage({
   await requireBrandAccess(campaign.brandId, "EDITOR");
   const dict = await getDictionary();
 
-  const [roster, kpis, accounts, staff] = await Promise.all([
+  const [roster, kpis, ranked, staff] = await Promise.all([
     db
       .select({
         id: campaignInfluencers.id,
@@ -63,16 +61,7 @@ export default async function CampaignSettingsPage({
 
     db.select().from(campaignKpis).where(eq(campaignKpis.campaignId, campaignId)),
 
-    db
-      .select({
-        id: influencerAccounts.id,
-        name: influencers.displayName,
-        handle: influencerAccounts.handle,
-        platform: influencerAccounts.platform,
-      })
-      .from(influencerAccounts)
-      .innerJoin(influencers, eq(influencerAccounts.influencerId, influencers.id))
-      .orderBy(asc(influencers.displayName)),
+    rankCreatorsForCampaign(campaignId, 12),
 
     db
       .select({ id: users.id, name: users.name, email: users.email })
@@ -81,8 +70,6 @@ export default async function CampaignSettingsPage({
       .orderBy(asc(users.email)),
   ]);
 
-  const booked = new Set(roster.map((r) => `${r.handle}:${r.platform}`));
-  const available = accounts.filter((a) => !booked.has(`${a.handle}:${a.platform}`));
 
   return (
     <div
@@ -153,67 +140,61 @@ export default async function CampaignSettingsPage({
           </ul>
         )}
 
-        {available.length > 0 ? (
-          <form
-            action={addParticipant}
-            className="flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-4"
-          >
-            <input type="hidden" name="campaignId" value={campaignId} />
-            <div className="min-w-56 flex-1">
-              <label className="eyebrow">Add creator</label>
-              <select
-                name="accountId"
-                className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
-              >
-                {available.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} — @{a.handle} ({a.platform.toLowerCase()})
-                  </option>
+        {/* Adding a creator never depends on them already existing. The ranked
+            list below is a suggestion layer over the same paste-a-link form. */}
+        <CreatorLinkAdd
+          action={addCreatorByLink}
+          campaignId={campaignId}
+          compact
+          suggestions={ranked
+            .filter((r) => !r.alreadyBooked)
+            .map((r) => ({
+              id: r.id,
+              displayName: r.displayName,
+              handle: r.accounts[0]?.handle ?? "",
+              platform: r.accounts[0]?.platform ?? "INSTAGRAM",
+              followerCount: r.totalFollowers,
+              score: r.score,
+              workedWithBrand: r.workedWithBrand,
+            }))}
+        />
+
+        {ranked.filter((r) => !r.alreadyBooked).length > 0 && (
+          <details className="card p-4">
+            <summary className="cursor-pointer text-sm font-medium">
+              Why these creators — fit scores explained
+            </summary>
+            <ul className="mt-4 space-y-2">
+              {ranked
+                .filter((r) => !r.alreadyBooked)
+                .slice(0, 8)
+                .map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center gap-3 text-xs">
+                    <span className="tnum w-8 shrink-0 font-medium">{r.score.toFixed(0)}</span>
+                    <span className="w-40 shrink-0 truncate font-medium">{r.displayName}</span>
+                    <span className="text-muted">
+                      platform {Math.round(r.components.platform * 100)} · audience{" "}
+                      {Math.round(r.components.audience * 100)} · track record{" "}
+                      {Math.round(r.components.trackRecord * 100)} · category{" "}
+                      {Math.round(r.components.category * 100)}
+                    </span>
+                    <span className="tnum ms-auto text-muted">
+                      ~{formatMoney(r.expectedFee, campaign.currency)}
+                    </span>
+                    {r.workedWithBrand && (
+                      <span className="rounded-full bg-brand/10 px-2 py-0.5 text-brand">
+                        worked with {campaign.brandName}
+                      </span>
+                    )}
+                  </li>
                 ))}
-              </select>
-            </div>
-            <div className="w-28">
-              <label className="eyebrow">Fee</label>
-              <input
-                name="fee"
-                type="number"
-                min={0}
-                defaultValue={0}
-                className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
-              />
-            </div>
-            <div className="w-28">
-              <label className="eyebrow">In-kind</label>
-              <input
-                name="inKindValue"
-                type="number"
-                min={0}
-                defaultValue={0}
-                className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
-              />
-            </div>
-            <div className="w-24">
-              <label className="eyebrow">Posts</label>
-              <input
-                name="deliverablesPlanned"
-                type="number"
-                min={1}
-                defaultValue={1}
-                className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
-              />
-            </div>
-            <button type="submit" className="h-9 rounded-md bg-ink px-4 text-sm font-medium text-white">
-              Add
-            </button>
-          </form>
-        ) : (
-          <p className="text-sm text-muted">
-            Every creator in the roster is already on this campaign.{" "}
-            <Link href="/influencers/new" className="underline">
-              Add a new one
-            </Link>
-            .
-          </p>
+            </ul>
+            <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
+              Relevance blends platform overlap (30%), audience size against budget per slot (25%),
+              time-weighted past effectiveness with this brand counting double (25%), and tag
+              overlap (20%). It ranks suggestions — it never filters anyone out.
+            </p>
+          </details>
         )}
       </section>
 

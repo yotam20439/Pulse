@@ -16,6 +16,7 @@ import { hashSync } from "bcryptjs";
 
 import { db } from "./index";
 import {
+  accountSnapshots,
   auditLog,
   brandMembers,
   brands,
@@ -248,6 +249,23 @@ async function main() {
       })),
     )
     .returning();
+
+  // Follower history so the growth component of the creator score has
+  // something to read on day one.
+  console.log("· account snapshots");
+  for (const account of accountRows) {
+    const base = account.followerCount ?? 50_000;
+    const readings = [90, 60, 30, 0].map((daysAgo, i) => ({
+      accountId: account.id,
+      capturedAt: dayOffset(-daysAgo),
+      followerCount: Math.round(base * (0.88 + i * 0.04 + rand() * 0.02)),
+      avgLikes: Math.round(base * (account.baselineEngagementRate ?? 0.04)),
+      avgViews: account.avgViews,
+      engagementRate: account.baselineEngagementRate,
+      source: "seed",
+    }));
+    await db.insert(accountSnapshots).values(readings);
+  }
 
   console.log("· campaigns, posts, and 30 days of snapshots");
   for (const blueprint of CAMPAIGN_BLUEPRINTS) {

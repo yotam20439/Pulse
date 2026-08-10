@@ -14,7 +14,8 @@
     "db:seed": "tsx --env-file=.env.local src/db/seed.ts",
     "db:reset": "tsx --env-file=.env.local src/db/seed.ts --reset",
     "db:schema": "tsx --env-file=.env.local scripts/apply-schema.ts",
-    "db:migrate-v3": "tsx --env-file=.env.local scripts/migrate-v3.ts"
+    "db:migrate-v3": "tsx --env-file=.env.local scripts/migrate-v3.ts",
+    "db:migrate-v4": "tsx --env-file=.env.local scripts/migrate-v4.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.4",

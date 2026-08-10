@@ -201,13 +201,43 @@ export const influencerAccounts = pgTable("influencer_accounts", {
   profileUrl: text("profile_url").notNull(),
   externalId: text("external_id"),
   followerCount: integer("follower_count"),
+  followingCount: integer("following_count"),
   avgViews: integer("avg_views"),
+  avgLikes: integer("avg_likes"),
+  avgComments: integer("avg_comments"),
+  /** Posts per week, from the profile. Feeds the consistency component. */
+  postFrequency: real("post_frequency"),
   /** Rolling 90-day engagement rate, 0–1. Used as the influencer's own baseline. */
   baselineEngagementRate: real("baseline_engagement_rate"),
+  isVerified: boolean("is_verified").notNull().default(false),
+  /**
+   * Where the profile numbers came from. "manual" is a person typing what the
+   * creator told them; "api" is the platform; "observed" is derived from posts
+   * we tracked ourselves. They deserve different levels of trust and the score
+   * weights them accordingly.
+   */
+  statsSource: text("stats_source").notNull().default("manual"),
   followersSyncedAt: timestamp("followers_synced_at", { withTimezone: true }),
 }, (t) => [
   uniqueIndex("influencer_accounts_platform_handle_key").on(t.platform, t.handle),
   index("influencer_accounts_influencer_idx").on(t.influencerId),
+]);
+
+/**
+ * Profile stats over time. Follower growth separates a creator who is climbing
+ * from one who peaked two years ago, and no single reading can show it.
+ */
+export const accountSnapshots = pgTable("account_snapshots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => influencerAccounts.id, { onDelete: "cascade" }),
+  capturedAt: timestamp("captured_at", { withTimezone: true }).notNull().defaultNow(),
+  followerCount: integer("follower_count"),
+  avgViews: integer("avg_views"),
+  avgLikes: integer("avg_likes"),
+  engagementRate: real("engagement_rate"),
+  source: text("source").notNull().default("manual"),
+}, (t) => [
+  uniqueIndex("account_snapshots_time_key").on(t.accountId, t.capturedAt),
 ]);
 
 /* -------------------------------------------------------------------------- */
@@ -386,6 +416,21 @@ export const insights = pgTable("insights", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("insights_campaign_idx").on(t.campaignId, t.createdAt)]);
 
+/**
+ * Cached creator quality scores. Recomputed on demand and written here so lists
+ * can sort by score without recalculating for every row.
+ */
+export const creatorScores = pgTable("creator_scores", {
+  influencerId: uuid("influencer_id").primaryKey().references(() => influencers.id, { onDelete: "cascade" }),
+  qualityScore: real("quality_score"),
+  /** 0–1: how much evidence sits behind the score. */
+  confidence: real("confidence"),
+  components: jsonb("components"),
+  campaignsRun: integer("campaigns_run").notNull().default(0),
+  postsTracked: integer("posts_tracked").notNull().default(0),
+  computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
   actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
@@ -467,6 +512,8 @@ export type Campaign = typeof campaigns.$inferSelect;
 export type CampaignInfluencer = typeof campaignInfluencers.$inferSelect;
 export type Influencer = typeof influencers.$inferSelect;
 export type InfluencerAccount = typeof influencerAccounts.$inferSelect;
+export type AccountSnapshot = typeof accountSnapshots.$inferSelect;
+export type CreatorScore = typeof creatorScores.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type MetricsSnapshot = typeof metricsSnapshots.$inferSelect;
 export type CampaignDay = typeof campaignMetricsHistory.$inferSelect;
