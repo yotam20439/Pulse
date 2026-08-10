@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
+    // Codespaces and other proxied dev hosts serve the app on a different
+    // origin than the forwarded host header, which Server Actions reject.
+    serverActions: { allowedOrigins: ["*.app.github.dev", "localhost:3000"] },
     // Enables forbidden() / unauthorized() used by src/lib/rbac.ts.
     // Requires Next 15.1+. On an older Next, delete this line and replace those
     // calls in src/lib/rbac.ts with notFound() / redirect("/signin").

@@ -4,10 +4,11 @@ import Link from "next/link";
 import { db } from "@/db";
 import { brands, campaigns } from "@/db/schema";
 import { accessibleBrandIds, requireUser } from "@/lib/rbac";
+import { getDictionary } from "@/lib/i18n";
 import { formatMoney } from "@/lib/utils";
 
 export default async function OverviewPage() {
-  const user = await requireUser();
+  const [user, dict] = await Promise.all([requireUser(), getDictionary()]);
   const ids = accessibleBrandIds(user);
 
   const rows =
@@ -39,7 +40,7 @@ export default async function OverviewPage() {
         </p>
         <Link
           href="/campaigns/new"
-          className="mt-5 inline-flex h-9 items-center rounded-md bg-brand px-4 text-sm font-medium text-brand-contrast"
+          className="mt-5 inline-flex h-9 items-center rounded-md bg-ink px-4 text-sm font-medium text-white"
         >
           Create campaign
         </Link>
@@ -50,18 +51,18 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="eyebrow">Across {new Set(rows.map((r) => r.brandName)).size} brands</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Recent campaigns</h1>
+        <p className="eyebrow">{dict.common.across(new Set(rows.map((r) => r.brandName)).size)}</p>
+        <h1 className="mt-1 text-2xl font-semibold">{dict.nav.campaigns}</h1>
       </header>
 
-      <div className="overflow-hidden rounded-lg border border-line bg-surface">
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line">
-              <th className="eyebrow px-4 py-3 text-left font-normal">Campaign</th>
-              <th className="eyebrow px-4 py-3 text-left font-normal">Brand</th>
-              <th className="eyebrow px-4 py-3 text-left font-normal">Status</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Budget</th>
+              <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.campaigns}</th>
+              <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.brands}</th>
+              <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.status}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.campaign.budget}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,7 +84,7 @@ export default async function OverviewPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted">{r.status.toLowerCase()}</td>
-                <td className="tnum px-4 py-3 text-right">
+                <td className="tnum px-4 py-3 text-end">
                   {formatMoney(r.budget, r.currency)}
                 </td>
               </tr>

@@ -7,6 +7,8 @@ import type { NextAuthConfig } from "next-auth";
  * runs on the edge; `src/auth.ts` extends it with the Drizzle adapter.
  */
 export const authConfig = {
+  // Providers live in src/auth.ts: the credentials provider needs database
+  // access, which must not be imported into the edge-safe config.
   providers: [],
   session: {
     // JWT rather than database sessions, so middleware can authorise a request

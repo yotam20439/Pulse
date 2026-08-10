@@ -29,7 +29,11 @@ import {
 
 const num = (expr: ReturnType<typeof sql>) => sql<number>`coalesce(${expr}, 0)`.mapWith(Number);
 
+/** Postgres throws on a malformed uuid, so unparseable ids 404 rather than 500. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getCampaign(campaignId: string) {
+  if (!UUID.test(campaignId)) return null;
   const [row] = await db
     .select({
       id: campaigns.id,

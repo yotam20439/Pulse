@@ -47,7 +47,7 @@ export function KpiProgress({ kpis }: { kpis: Kpi[] }) {
                   style={{ width: `${Math.min(pct, 100)}%` }}
                 />
               </div>
-              <span className={cn("tnum w-11 text-right text-xs", met ? "text-positive" : "text-muted")}>
+              <span className={cn("tnum w-11 text-end text-xs", met ? "text-positive" : "text-muted")}>
                 {pct}%
               </span>
             </div>

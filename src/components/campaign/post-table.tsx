@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
 
 import { PlatformBadge } from "@/components/platform-badge";
+import type { Dictionary } from "@/lib/i18n";
 import type { PostRow } from "@/lib/queries/campaign";
 import { cn, formatCount, formatPercent } from "@/lib/utils";
 
@@ -13,24 +14,26 @@ import { cn, formatCount, formatPercent } from "@/lib/utils";
  * ask why a post flatlined, and the honest answer is usually "we lost access
  * to it three days ago".
  */
-const STATUS_COPY: Record<string, { label: string; tone: string }> = {
-  OK: { label: "Tracking", tone: "text-muted" },
-  PENDING: { label: "Not collected yet", tone: "text-muted" },
-  PARTIAL: { label: "Partial data", tone: "text-warning" },
-  FAILED: { label: "Collection failed", tone: "text-critical" },
-  UNAVAILABLE: { label: "Post unavailable", tone: "text-critical" },
-};
+
 
 const relative = (date: Date | null) => {
-  if (!date) return "never";
+  if (!date) return "—";
   const hours = Math.round((Date.now() - new Date(date).getTime()) / 3_600_000);
-  if (hours < 1) return "just now";
+  if (hours < 1) return "<1h";
   if (hours < 24) return `${hours}h ago`;
   return `${Math.round(hours / 24)}d ago`;
 };
 
-export function PostTable({ posts }: { posts: PostRow[] }) {
+export function PostTable({ posts, dict }: { posts: PostRow[]; dict: Dictionary }) {
   const [onlyIssues, setOnlyIssues] = useState(false);
+
+  const STATUS_COPY: Record<string, { label: string; tone: string }> = {
+    OK: { label: dict.campaign.tracking, tone: "text-muted" },
+    PENDING: { label: dict.campaign.pending, tone: "text-muted" },
+    PARTIAL: { label: dict.campaign.partial, tone: "text-warning" },
+    FAILED: { label: dict.campaign.failed, tone: "text-critical" },
+    UNAVAILABLE: { label: dict.campaign.unavailable, tone: "text-critical" },
+  };
 
   const rows = useMemo(
     () =>
@@ -45,16 +48,17 @@ export function PostTable({ posts }: { posts: PostRow[] }) {
   if (posts.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-line-strong bg-surface p-8 text-center text-sm text-muted">
-        No posts tracked yet. Paste a post URL to start collecting metrics for it.
+        {dict.campaign.noPosts}
       </p>
     );
   }
 
   return (
-    <div className="rounded-lg border border-line bg-surface">
+    <div className="card">
       <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-2">
         <p className="eyebrow">
-          {posts.length} posts{issueCount > 0 && ` · ${issueCount} need attention`}
+          {posts.length} {dict.metrics.posts.toLowerCase()}
+          {issueCount > 0 && ` · ${issueCount} ${dict.campaign.needAttention}`}
         </p>
         {issueCount > 0 && (
           <button
@@ -64,7 +68,7 @@ export function PostTable({ posts }: { posts: PostRow[] }) {
               onlyIssues ? "bg-sunken font-medium text-ink" : "text-muted hover:text-ink",
             )}
           >
-            {onlyIssues ? "Show all" : "Show only issues"}
+            {onlyIssues ? dict.campaign.showAll : dict.campaign.showIssues}
           </button>
         )}
       </div>
@@ -73,13 +77,13 @@ export function PostTable({ posts }: { posts: PostRow[] }) {
         <table className="w-full min-w-[48rem] text-sm">
           <thead>
             <tr className="border-b border-line">
-              <th className="eyebrow px-4 py-3 text-left font-normal">Post</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Views</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Reach</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Eng.</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Rate</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">24h</th>
-              <th className="eyebrow px-4 py-3 text-left font-normal">Collected</th>
+              <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.posts}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.views}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.reach}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.engagements}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.engagementRate}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">24h</th>
+              <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.collected}</th>
             </tr>
           </thead>
           <tbody>
@@ -110,11 +114,11 @@ export function PostTable({ posts }: { posts: PostRow[] }) {
                     </div>
                   </td>
 
-                  <td className="tnum px-4 py-3 text-right">{formatCount(post.views)}</td>
-                  <td className="tnum px-4 py-3 text-right">{formatCount(post.reach)}</td>
-                  <td className="tnum px-4 py-3 text-right">{formatCount(post.engagements)}</td>
-                  <td className="tnum px-4 py-3 text-right">{formatPercent(post.engagementRate)}</td>
-                  <td className="tnum px-4 py-3 text-right text-muted">
+                  <td className="tnum px-4 py-3 text-end">{formatCount(post.views)}</td>
+                  <td className="tnum px-4 py-3 text-end">{formatCount(post.reach)}</td>
+                  <td className="tnum px-4 py-3 text-end">{formatCount(post.engagements)}</td>
+                  <td className="tnum px-4 py-3 text-end">{formatPercent(post.engagementRate)}</td>
+                  <td className="tnum px-4 py-3 text-end text-muted">
                     {post.deltaViews == null
                       ? "—"
                       : `${post.deltaViews > 0 ? "+" : ""}${formatCount(post.deltaViews)}`}

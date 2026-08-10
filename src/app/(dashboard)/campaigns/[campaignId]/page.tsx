@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { notFound } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ContributionTable } from "@/components/campaign/contribution-table";
 import { IndexTile } from "@/components/campaign/index-tile";
@@ -9,17 +9,19 @@ import { KpiProgress } from "@/components/campaign/kpi-progress";
 import { MetricStrip } from "@/components/campaign/metric-strip";
 import { PostTable } from "@/components/campaign/post-table";
 import { TrendChart } from "@/components/charts/trend-chart";
+import { getDictionary, getLocale } from "@/lib/i18n";
+import { generateInsights } from "@/lib/insights";
 import {
   getCampaign,
   getContribution,
   getHistory,
-  getInsights,
   getKpiProgress,
+  getPlatformMix,
   getPosts,
   getTotals,
 } from "@/lib/queries/campaign";
 import { requireBrandAccess } from "@/lib/rbac";
-import { formatMoney } from "@/lib/utils";
+import { formatCount, formatMoney } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ campaignId: string }> }) {
   const { campaignId } = await params;
@@ -27,12 +29,22 @@ export async function generateMetadata({ params }: { params: Promise<{ campaignI
   return { title: campaign?.name ?? "Campaign" };
 }
 
+const STATUS_TONE: Record<string, string> = {
+  ACTIVE: "bg-positive/10 text-positive",
+  PAUSED: "bg-warning/10 text-warning",
+  DRAFT: "bg-sunken text-muted",
+  SCHEDULED: "bg-sunken text-muted",
+  COMPLETED: "bg-sunken text-ink-soft",
+  ARCHIVED: "bg-sunken text-muted",
+};
+
 export default async function CampaignPage({
   params,
 }: {
   params: Promise<{ campaignId: string }>;
 }) {
   const { campaignId } = await params;
+  const [dict, locale] = await Promise.all([getDictionary(), getLocale()]);
 
   const campaign = await getCampaign(campaignId);
   if (!campaign) notFound();
@@ -41,11 +53,11 @@ export default async function CampaignPage({
   // never from a brandId in the URL, which the user controls.
   const { role } = await requireBrandAccess(campaign.brandId);
 
-  const [totals, history, insights, postRows] = await Promise.all([
+  const [totals, history, postRows, mix] = await Promise.all([
     getTotals(campaignId),
     getHistory(campaignId),
-    getInsights(campaignId),
     getPosts(campaignId),
+    getPlatformMix(campaignId),
   ]);
 
   const [kpis, contribution] = await Promise.all([
@@ -60,30 +72,54 @@ export default async function CampaignPage({
     effectiveness?: Record<string, number>;
   } | null;
 
+  const start = new Date(campaign.startDate).getTime();
+  const end = campaign.endDate ? new Date(campaign.endDate).getTime() : null;
+  const insights = generateInsights({
+    dict,
+    history,
+    contribution,
+    posts: postRows,
+    totals,
+    kpis,
+    currency: campaign.currency,
+    daysElapsed: Math.max(1, Math.round((Date.now() - start) / 86_400_000)),
+    daysTotal: end ? Math.max(1, Math.round((end - start) / 86_400_000)) : null,
+  });
+
+  const Chevron = locale === "he" ? ChevronRight : ChevronLeft;
+  const totalMixReach = mix.reduce((s, m) => s + m.reach, 0) || 1;
+
   return (
-    <div
-      style={{ "--brand": campaign.brandAccent } as React.CSSProperties}
-      className="space-y-8"
-    >
-      <header className="space-y-3">
+    <div style={{ "--brand": campaign.brandAccent } as React.CSSProperties} className="space-y-8">
+      <header className="space-y-4">
         <Link
           href={`/brands/${campaign.brandId}`}
-          className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+          className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-ink"
         >
-          <ChevronLeft className="size-4" aria-hidden />
+          <Chevron className="size-4" aria-hidden />
           {campaign.brandName}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{campaign.name}</h1>
-            <p className="mt-1 text-sm text-muted">
-              {campaign.objective ?? "No objective set"}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-semibold">{campaign.name}</h1>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                  STATUS_TONE[campaign.status] ?? "bg-sunken text-muted"
+                }`}
+              >
+                {campaign.status.toLowerCase()}
+              </span>
+            </div>
+            <p className="mt-1.5 text-sm text-muted">
+              {campaign.objective ?? dict.campaign.noObjective}
             </p>
             <p className="tnum mt-2 text-xs text-muted">
-              {campaign.startDate} → {campaign.endDate ?? "open"} ·{" "}
-              {campaign.status.toLowerCase()} · budget{" "}
-              {formatMoney(campaign.budget, campaign.currency)}
+              {campaign.startDate} → {campaign.endDate ?? dict.campaign.open} ·{" "}
+              {formatMoney(campaign.budget, campaign.currency)} · {totals.postCount}{" "}
+              {dict.metrics.posts.toLowerCase()} · {totals.creators}{" "}
+              {dict.metrics.creators.toLowerCase()}
             </p>
           </div>
 
@@ -91,28 +127,29 @@ export default async function CampaignPage({
             <div className="flex gap-2">
               <Link
                 href={`/campaigns/${campaign.id}/posts/new`}
-                className="h-9 rounded-md border border-line px-4 text-sm font-medium leading-9 hover:bg-sunken"
+                className="h-9 rounded-md border border-line bg-surface px-4 text-sm font-medium leading-9 transition-colors hover:bg-sunken"
               >
-                Add post
+                {dict.campaign.addPost}
               </Link>
               <Link
                 href={`/campaigns/${campaign.id}/settings`}
                 className="h-9 rounded-md bg-brand px-4 text-sm font-medium leading-9 text-brand-contrast"
               >
-                Edit campaign
+                {dict.campaign.edit}
               </Link>
             </div>
           )}
         </div>
       </header>
 
-      <MetricStrip totals={totals} currency={campaign.currency} />
+      <MetricStrip totals={totals} history={history} currency={campaign.currency} dict={dict} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <IndexTile
-          label="Prominence"
-          hebrew="מדד בולטות"
+          label={dict.indices.prominence}
+          native={dict.indices.prominenceNative}
           score={latest?.prominenceIndex ?? null}
+          dict={dict}
           delta={
             latest?.prominenceIndex != null && weekAgo?.prominenceIndex != null
               ? latest.prominenceIndex - weekAgo.prominenceIndex
@@ -121,17 +158,18 @@ export default async function CampaignPage({
           components={
             components?.prominence
               ? [
-                  { label: "Volume", value: components.prominence.volume ?? 0 },
-                  { label: "Breadth", value: components.prominence.breadth ?? 0 },
-                  { label: "Amplification", value: components.prominence.amplification ?? 0 },
+                  { label: dict.indices.volume, value: components.prominence.volume ?? 0 },
+                  { label: dict.indices.breadth, value: components.prominence.breadth ?? 0 },
+                  { label: dict.indices.amplification, value: components.prominence.amplification ?? 0 },
                 ]
               : undefined
           }
         />
         <IndexTile
-          label="Effectiveness"
-          hebrew="מדד אפקטיביות"
+          label={dict.indices.effectiveness}
+          native={dict.indices.effectivenessNative}
           score={latest?.effectivenessIndex ?? null}
+          dict={dict}
           delta={
             latest?.effectivenessIndex != null && weekAgo?.effectivenessIndex != null
               ? latest.effectivenessIndex - weekAgo.effectivenessIndex
@@ -140,41 +178,77 @@ export default async function CampaignPage({
           components={
             components?.effectiveness
               ? [
-                  { label: "Eng. quality", value: components.effectiveness.quality ?? 0 },
-                  { label: "Cost efficiency", value: components.effectiveness.efficiency ?? 0 },
-                  { label: "KPI attainment", value: components.effectiveness.attainment ?? 0 },
+                  { label: dict.indices.quality, value: components.effectiveness.quality ?? 0 },
+                  { label: dict.indices.efficiency, value: components.effectiveness.efficiency ?? 0 },
+                  { label: dict.indices.attainment, value: components.effectiveness.attainment ?? 0 },
                 ]
               : undefined
           }
         />
       </div>
 
-      <TrendChart data={history} />
+      <TrendChart data={history} dict={dict} />
 
-      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <section className="min-w-0 space-y-3">
-          <h2 className="eyebrow">Creator contribution</h2>
-          <ContributionTable rows={contribution} currency={campaign.currency} />
+          <h2 className="eyebrow">{dict.campaign.contribution}</h2>
+          <ContributionTable rows={contribution} currency={campaign.currency} dict={dict} />
         </section>
 
         <div className="space-y-8">
           <section className="space-y-3">
-            <h2 className="eyebrow">Target progress</h2>
-            <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="eyebrow">{dict.campaign.targets}</h2>
+            <div className="card p-5">
               <KpiProgress kpis={kpis} />
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="eyebrow">Insights</h2>
-            <InsightsPanel insights={insights} />
-          </section>
+          {mix.length > 1 && (
+            <section className="space-y-3">
+              <h2 className="eyebrow">{dict.campaign.platformMix}</h2>
+              <div className="card space-y-3 p-5">
+                <div className="flex h-2 overflow-hidden rounded-full bg-sunken">
+                  {mix.map((m, i) => (
+                    <div
+                      key={m.platform}
+                      title={m.platform}
+                      style={{
+                        width: `${(m.reach / totalMixReach) * 100}%`,
+                        background: "var(--brand)",
+                        opacity: 1 - i * 0.18,
+                      }}
+                    />
+                  ))}
+                </div>
+                <ul className="space-y-1.5">
+                  {mix.map((m, i) => (
+                    <li key={m.platform} className="flex items-center gap-2 text-xs">
+                      <span
+                        aria-hidden
+                        className="size-2 rounded-sm"
+                        style={{ background: "var(--brand)", opacity: 1 - i * 0.18 }}
+                      />
+                      <span className="text-ink-soft">{m.platform.toLowerCase()}</span>
+                      <span className="tnum ms-auto text-muted">
+                        {formatCount(m.reach)} · {m.postCount}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">Posts</h2>
-        <PostTable posts={postRows} />
+        <h2 className="eyebrow">{dict.campaign.insights}</h2>
+        <InsightsPanel insights={insights} dict={dict} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="eyebrow">{dict.campaign.posts}</h2>
+        <PostTable posts={postRows} dict={dict} />
       </section>
     </div>
   );

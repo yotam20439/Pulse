@@ -4,25 +4,35 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
 
 import { PlatformBadge } from "@/components/platform-badge";
+import type { Dictionary } from "@/lib/i18n";
 import type { ContributionRow } from "@/lib/queries/campaign";
 import { cn, formatCount, formatMoney, formatPercent } from "@/lib/utils";
 
 type SortKey = "reach" | "engagementRate" | "costPerEngagement" | "effectiveness" | "spend";
 
-const COLUMNS: { key: SortKey; label: string; hint?: string }[] = [
-  { key: "reach", label: "Reach" },
-  { key: "engagementRate", label: "Eng. rate" },
-  { key: "spend", label: "Cost" },
-  { key: "costPerEngagement", label: "Cost / eng.", hint: "Spend ÷ weighted engagements" },
-  { key: "effectiveness", label: "Effectiveness" },
-];
+
 
 /**
  * The re-booking table. Sorted by reach by default, but the column that
  * actually decides renewals is cost per weighted engagement — a creator can be
  * third on reach and first on value.
  */
-export function ContributionTable({ rows, currency }: { rows: ContributionRow[]; currency: string }) {
+export function ContributionTable({
+  rows,
+  currency,
+  dict,
+}: {
+  rows: ContributionRow[];
+  currency: string;
+  dict: Dictionary;
+}) {
+  const COLUMNS: { key: SortKey; label: string }[] = [
+    { key: "reach", label: dict.metrics.reach },
+    { key: "engagementRate", label: dict.metrics.engagementRate },
+    { key: "spend", label: dict.campaign.cost },
+    { key: "costPerEngagement", label: dict.campaign.costPerEng },
+    { key: "effectiveness", label: dict.indices.effectiveness },
+  ];
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "reach",
     dir: "desc",
@@ -43,26 +53,25 @@ export function ContributionTable({ rows, currency }: { rows: ContributionRow[];
   if (rows.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-line-strong bg-surface p-8 text-center text-sm text-muted">
-        No creators on this campaign yet. Add them from the campaign settings.
+        {dict.campaign.noCreators}
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+    <div className="overflow-x-auto card">
       <table className="w-full min-w-[52rem] text-sm">
         <thead>
           <tr className="border-b border-line">
-            <th className="eyebrow px-4 py-3 text-left font-normal">Creator</th>
-            <th className="eyebrow px-4 py-3 text-left font-normal">Delivered</th>
+            <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.creators}</th>
+            <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.delivered}</th>
             {COLUMNS.map((col) => {
               const active = sort.key === col.key;
               const Icon = sort.dir === "desc" ? ArrowDown : ArrowUp;
               return (
-                <th key={col.key} className="px-4 py-3 text-right font-normal">
+                <th key={col.key} className="px-4 py-3 text-end font-normal">
                   <button
                     onClick={() => toggle(col.key)}
-                    title={col.hint}
                     aria-sort={active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"}
                     className={cn(
                       "eyebrow inline-flex items-center gap-1 hover:text-ink",
@@ -86,7 +95,7 @@ export function ContributionTable({ rows, currency }: { rows: ContributionRow[];
                   <div className="min-w-0">
                     <p className="truncate font-medium">{row.name}</p>
                     <p className="tnum truncate text-xs text-muted">
-                      @{row.handle} · {formatCount(row.followers)} followers
+                      @{row.handle} · {formatCount(row.followers)} {dict.metrics.followers}
                     </p>
                   </div>
                 </div>
@@ -104,7 +113,7 @@ export function ContributionTable({ rows, currency }: { rows: ContributionRow[];
                 </span>
               </td>
 
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-end">
                 <span className="tnum">{formatCount(row.reach)}</span>
                 {/* Share of campaign reach, as a bar under the number. */}
                 <span className="mt-1 block h-0.5 w-full max-w-20 justify-self-end bg-sunken">
@@ -115,7 +124,7 @@ export function ContributionTable({ rows, currency }: { rows: ContributionRow[];
                 </span>
               </td>
 
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-end">
                 <span className="tnum">{formatPercent(row.engagementRate)}</span>
                 {row.lift != null && (
                   <span
@@ -125,19 +134,18 @@ export function ContributionTable({ rows, currency }: { rows: ContributionRow[];
                     )}
                     title="Versus this creator's own baseline engagement rate"
                   >
-                    {row.lift >= 1 ? "+" : ""}
-                    {((row.lift - 1) * 100).toFixed(0)}% vs own
+                    {`${row.lift >= 1 ? "+" : ""}${((row.lift - 1) * 100).toFixed(0)}% ${dict.campaign.vsOwn}`}
                   </span>
                 )}
               </td>
 
-              <td className="tnum px-4 py-3 text-right">{formatMoney(row.spend, currency)}</td>
+              <td className="tnum px-4 py-3 text-end">{formatMoney(row.spend, currency)}</td>
 
-              <td className="tnum px-4 py-3 text-right">
+              <td className="tnum px-4 py-3 text-end">
                 {row.costPerEngagement == null ? "—" : row.costPerEngagement.toFixed(2)}
               </td>
 
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-end">
                 <span className="tnum text-base">{row.effectiveness.toFixed(0)}</span>
                 <span className="block text-xs text-muted">{row.band.label}</span>
               </td>

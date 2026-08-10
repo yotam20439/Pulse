@@ -1,5 +1,6 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 
+import Link from "next/link";
 import { PlatformBadge } from "@/components/platform-badge";
 import { db } from "@/db";
 import {
@@ -9,6 +10,7 @@ import {
   influencers,
 } from "@/db/schema";
 import { accessibleBrandIds, requireUser } from "@/lib/rbac";
+import { getDictionary } from "@/lib/i18n";
 import { formatCount, formatPercent } from "@/lib/utils";
 
 export const metadata = { title: "Influencers" };
@@ -19,7 +21,7 @@ export const metadata = { title: "Influencers" };
  * between clients.
  */
 export default async function InfluencersPage() {
-  const user = await requireUser();
+  const [user, dict] = await Promise.all([requireUser(), getDictionary()]);
   const ids = accessibleBrandIds(user);
 
   const rows =
@@ -50,22 +52,36 @@ export default async function InfluencersPage() {
         <p className="mt-2 text-sm text-muted">
           Creators appear here once they&apos;re added to a campaign on a brand you can access.
         </p>
+        <Link
+          href="/influencers/new"
+          className="mt-5 inline-flex h-9 items-center rounded-md bg-ink px-4 text-sm font-medium text-white"
+        >
+          Add creator
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Influencers</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">{dict.nav.influencers}</h1>
+        <Link
+          href="/influencers/new"
+          className="h-9 rounded-md bg-ink px-4 text-sm font-medium leading-9 text-white"
+        >
+          Add creator
+        </Link>
+      </div>
 
-      <div className="overflow-hidden rounded-lg border border-line bg-surface">
+      <div className="overflow-hidden card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line">
-              <th className="eyebrow px-4 py-3 text-left font-normal">Creator</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Followers</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Baseline ER</th>
-              <th className="eyebrow px-4 py-3 text-right font-normal">Campaigns</th>
+              <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.creators}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.followers}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.engagementRate}</th>
+              <th className="eyebrow px-4 py-3 text-end font-normal">{dict.nav.campaigns}</th>
             </tr>
           </thead>
           <tbody>
@@ -80,9 +96,9 @@ export default async function InfluencersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="tnum px-4 py-3 text-right">{formatCount(row.followers)}</td>
-                <td className="tnum px-4 py-3 text-right">{formatPercent(row.baselineEr)}</td>
-                <td className="tnum px-4 py-3 text-right">{row.campaignCount}</td>
+                <td className="tnum px-4 py-3 text-end">{formatCount(row.followers)}</td>
+                <td className="tnum px-4 py-3 text-end">{formatPercent(row.baselineEr)}</td>
+                <td className="tnum px-4 py-3 text-end">{row.campaignCount}</td>
               </tr>
             ))}
           </tbody>

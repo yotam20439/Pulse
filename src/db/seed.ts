@@ -51,6 +51,8 @@ function mulberry32(seed: number) {
   };
 }
 const rand = mulberry32(20260809);
+
+/** Every seeded account shares this password. Change it before any real use. */
 const SEED_PASSWORD = "pulse2026";
 const int = (min: number, max: number) => Math.floor(rand() * (max - min + 1)) + min;
 const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];

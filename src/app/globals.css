@@ -2,32 +2,39 @@
 
 /**
  * Design direction — "instrument panel".
+ *
  * The interface stays graphite and quiet so the one saturated colour on screen
  * is the brand you are currently looking at: --brand is re-bound per brand from
  * `brands.accent_color`, so switching brands re-tints the rail, the active nav
- * item, and the primary series in every chart. Numbers are set in a mono face
- * with tabular figures, so columns of metrics line up digit-for-digit.
+ * item, and the primary series in every chart.
+ *
+ * Numbers are set in a mono face with tabular figures so columns of metrics
+ * line up digit-for-digit — the single most useful typographic decision in a
+ * table-heavy analytics tool, and the reason the mono face is not decorative.
  */
 
 :root {
-  --canvas: #f7f7f8;
+  --canvas: #f6f6f8;
   --surface: #ffffff;
-  --surface-sunken: #f1f1f3;
-  --ink: #12141a;
-  --ink-soft: #3b3f4b;
+  --surface-sunken: #f0f0f3;
+  --ink: #0f1116;
+  --ink-soft: #3a3e4a;
   --muted: #6b6e7b;
-  --line: #e4e4e8;
-  --line-strong: #cfd0d6;
+  --line: #e5e5ea;
+  --line-strong: #cdced5;
 
-  /* Overridden inline per brand — see BrandThemeProvider. */
+  /* Rebound per brand — see the brand and campaign pages. */
   --brand: #6d4aff;
   --brand-contrast: #ffffff;
 
-  --positive: #0f9d6e;
-  --warning: #c77700;
-  --critical: #d0402b;
+  --positive: #0b8f66;
+  --warning: #b56b00;
+  --critical: #c93b26;
 
-  --radius: 0.5rem;
+  --radius: 0.625rem;
+
+  --shadow-card: 0 1px 2px rgb(15 17 22 / 0.04), 0 1px 1px rgb(15 17 22 / 0.02);
+  --shadow-raised: 0 4px 16px -4px rgb(15 17 22 / 0.1), 0 1px 2px rgb(15 17 22 / 0.05);
 }
 
 @theme inline {
@@ -45,12 +52,18 @@
   --color-warning: var(--warning);
   --color-critical: var(--critical);
 
-  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-sans: var(--font-sans-latin), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-figures), ui-monospace, monospace;
 
-  --radius-sm: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
+}
+
+/* Hebrew leads with a Hebrew face; Latin words inside Hebrew text still land
+   on Inter Tight via the fallback chain. */
+html[lang="he"] body {
+  font-family: var(--font-sans-hebrew), var(--font-sans-latin), system-ui, sans-serif;
 }
 
 @layer base {
@@ -63,28 +76,69 @@
     color: var(--ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Every metric, axis label, and index score. Tabular so columns align. */
+  h1, h2, h3 {
+    letter-spacing: -0.018em;
+  }
+
+  /* Every metric, axis label, and index score. */
   .tnum {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
   }
 
-  /* Small caps eyebrow used for section labels and table headers. */
+  /* Section labels and table headers. */
   .eyebrow {
     font-family: var(--font-mono);
     font-size: 0.6875rem;
-    letter-spacing: 0.08em;
+    line-height: 1.2;
+    letter-spacing: 0.075em;
     text-transform: uppercase;
     color: var(--muted);
+  }
+
+  /* Hebrew has no case, so uppercase small-caps reads as noise. Keep the size
+     and colour, drop the transform and the wide tracking. */
+  html[lang="he"] .eyebrow {
+    text-transform: none;
+    letter-spacing: 0.01em;
+    font-family: var(--font-sans-hebrew), var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  /* Numbers stay left-to-right inside right-to-left text. Without this, a
+     figure like "1.2M" or a percentage can reorder mid-sentence. */
+  html[dir="rtl"] .tnum {
+    direction: ltr;
+    unicode-bidi: isolate;
   }
 
   :focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Table rows: a hairline rather than a full grid, so the eye follows the
+     numbers instead of the chrome. */
+  .data-row {
+    border-bottom: 1px solid var(--line);
+  }
+  .data-row:last-child {
+    border-bottom: 0;
   }
 }
 

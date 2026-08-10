@@ -2,6 +2,8 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { signIn } from "@/auth";
+import { LocaleSwitcher } from "@/components/nav/locale-switcher";
+import { getDictionary, getLocale } from "@/lib/i18n";
 
 export const metadata = { title: "Sign in" };
 
@@ -11,6 +13,7 @@ export default async function SignInPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const [dict, locale] = await Promise.all([getDictionary(), getLocale()]);
 
   async function authenticate(formData: FormData) {
     "use server";
@@ -31,17 +34,17 @@ export default async function SignInPage({
   return (
     <div className="flex min-h-dvh items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <p className="tnum text-sm font-semibold tracking-tight">PULSE</p>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="mt-2 text-sm text-muted">
-          Use the work account your administrator created. Accounts are made by admins, not by
-          signing up.
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="tnum text-sm font-semibold tracking-tight">PULSE</p>
+          <LocaleSwitcher locale={locale} />
+        </div>
+        <h1 className="mt-6 text-2xl font-semibold">{dict.auth.title}</h1>
+        <p className="mt-2 text-sm text-muted">{dict.auth.subtitle}</p>
 
         <form action={authenticate} className="mt-6 space-y-4">
           <div>
             <label htmlFor="email" className="eyebrow">
-              Email
+              {dict.auth.email}
             </label>
             <input
               id="email"
@@ -56,7 +59,7 @@ export default async function SignInPage({
 
           <div>
             <label htmlFor="password" className="eyebrow">
-              Password
+              {dict.auth.password}
             </label>
             <input
               id="password"
@@ -70,7 +73,7 @@ export default async function SignInPage({
 
           {error && (
             <p className="rounded-md border border-line bg-surface p-3 text-sm text-critical">
-              That email and password don&apos;t match an active account.
+              {dict.auth.failed}
             </p>
           )}
 
@@ -78,13 +81,11 @@ export default async function SignInPage({
             type="submit"
             className="h-10 w-full rounded-md bg-ink px-4 text-sm font-medium text-white"
           >
-            Sign in
+            {dict.auth.submit}
           </button>
         </form>
 
-        <p className="mt-6 text-xs text-muted">
-          Forgotten your password? An administrator can reset it for you.
-        </p>
+        <p className="mt-6 text-xs text-muted">{dict.auth.forgot}</p>
       </div>
     </div>
   );

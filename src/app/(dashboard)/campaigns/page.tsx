@@ -4,18 +4,15 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { brands, campaignMetricsHistory, campaigns } from "@/db/schema";
 import { accessibleBrandIds, requireUser } from "@/lib/rbac";
+import { getDictionary } from "@/lib/i18n";
 import { formatMoney } from "@/lib/utils";
 
 export const metadata = { title: "Campaigns" };
 
-const GROUPS = [
-  { key: "live", label: "Running now", statuses: ["ACTIVE", "PAUSED"] },
-  { key: "upcoming", label: "Not started", statuses: ["SCHEDULED", "DRAFT"] },
-  { key: "done", label: "Finished", statuses: ["COMPLETED", "ARCHIVED"] },
-] as const;
+
 
 export default async function CampaignsPage() {
-  const user = await requireUser();
+  const [user, dict] = await Promise.all([requireUser(), getDictionary()]);
   const ids = accessibleBrandIds(user);
 
   const rows =
@@ -52,6 +49,12 @@ export default async function CampaignsPage() {
 
   const scoreFor = new Map(scores.map((s) => [s.campaignId, s]));
 
+  const GROUPS = [
+    { key: "live", label: dict.campaign.live, statuses: ["ACTIVE", "PAUSED"] },
+    { key: "upcoming", label: dict.campaign.upcoming, statuses: ["SCHEDULED", "DRAFT"] },
+    { key: "done", label: dict.campaign.finished, statuses: ["COMPLETED", "ARCHIVED"] },
+  ];
+
   if (rows.length === 0) {
     return (
       <div className="max-w-md py-16">
@@ -66,7 +69,7 @@ export default async function CampaignsPage() {
 
   return (
     <div className="space-y-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Campaigns</h1>
+      <h1 className="text-2xl font-semibold">{dict.nav.campaigns}</h1>
 
       {GROUPS.map((group) => {
         const groupRows = rows.filter((r) => (group.statuses as readonly string[]).includes(r.status));
@@ -77,16 +80,16 @@ export default async function CampaignsPage() {
             <h2 className="eyebrow">
               {group.label} ({groupRows.length})
             </h2>
-            <div className="overflow-hidden rounded-lg border border-line bg-surface">
+            <div className="overflow-hidden card overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-line">
-                    <th className="eyebrow px-4 py-3 text-left font-normal">Campaign</th>
-                    <th className="eyebrow px-4 py-3 text-left font-normal">Brand</th>
-                    <th className="eyebrow px-4 py-3 text-left font-normal">Dates</th>
-                    <th className="eyebrow px-4 py-3 text-right font-normal">Budget</th>
-                    <th className="eyebrow px-4 py-3 text-right font-normal">Prom.</th>
-                    <th className="eyebrow px-4 py-3 text-right font-normal">Eff.</th>
+                    <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.campaigns}</th>
+                    <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.brands}</th>
+                    <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.dates}</th>
+                    <th className="eyebrow px-4 py-3 text-end font-normal">{dict.campaign.budget}</th>
+                    <th className="eyebrow px-4 py-3 text-end font-normal">{dict.indices.prominence}</th>
+                    <th className="eyebrow px-4 py-3 text-end font-normal">{dict.indices.effectiveness}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -110,15 +113,15 @@ export default async function CampaignsPage() {
                           </span>
                         </td>
                         <td className="tnum px-4 py-3 text-xs text-muted">
-                          {row.startDate} → {row.endDate ?? "open"}
+                          {row.startDate} → {row.endDate ?? dict.campaign.open}
                         </td>
-                        <td className="tnum px-4 py-3 text-right">
+                        <td className="tnum px-4 py-3 text-end">
                           {formatMoney(row.budget, row.currency)}
                         </td>
-                        <td className="tnum px-4 py-3 text-right">
+                        <td className="tnum px-4 py-3 text-end">
                           {score?.prominenceIndex?.toFixed(0) ?? "—"}
                         </td>
-                        <td className="tnum px-4 py-3 text-right">
+                        <td className="tnum px-4 py-3 text-end">
                           {score?.effectivenessIndex?.toFixed(0) ?? "—"}
                         </td>
                       </tr>

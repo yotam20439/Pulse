@@ -1,24 +1,76 @@
-import { formatCount, formatMoney, formatPercent } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n";
+import type { CampaignDay } from "@/db/schema";
 import type { CampaignTotals } from "@/lib/queries/campaign";
+import { cn, formatCount, formatMoney, formatPercent } from "@/lib/utils";
 
-export function MetricStrip({ totals, currency }: { totals: CampaignTotals; currency: string }) {
+/**
+ * Headline totals with a sparkline behind each one.
+ *
+ * A number alone answers "how much"; the sparkline answers "and is that still
+ * happening" — which is the question an analyst actually has. It costs one
+ * inline SVG per tile and no extra query, since the daily rollups are already
+ * loaded for the chart.
+ */
+function Spark({ points }: { points: number[] }) {
+  if (points.length < 3) return null;
+  const max = Math.max(...points, 1);
+  const min = Math.min(...points, 0);
+  const span = max - min || 1;
+  const d = points
+    .map((v, i) => {
+      const x = (i / (points.length - 1)) * 100;
+      const y = 20 - ((v - min) / span) * 18;
+      return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="mt-2 h-5 w-full" aria-hidden>
+      <path d={d} fill="none" stroke="var(--brand)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+export function MetricStrip({
+  totals,
+  history,
+  currency,
+  dict,
+}: {
+  totals: CampaignTotals;
+  history: CampaignDay[];
+  currency: string;
+  dict: Dictionary;
+}) {
+  const series = (key: "reach" | "impressions" | "engagements" | "clicks") =>
+    history.map((h) => h[key] ?? 0);
+
   const items = [
-    { label: "Reach", value: formatCount(totals.reach) },
-    { label: "Impressions", value: formatCount(totals.impressions) },
-    { label: "Engagements", value: formatCount(totals.engagements) },
-    { label: "Eng. rate", value: formatPercent(totals.engagementRate) },
-    { label: "Clicks", value: formatCount(totals.clicks) },
-    { label: "Spend", value: formatMoney(totals.spend, currency) },
-    { label: "CPM", value: totals.cpm == null ? "—" : totals.cpm.toFixed(2) },
-    { label: "CPE", value: totals.cpe == null ? "—" : totals.cpe.toFixed(2) },
+    { label: dict.metrics.reach, value: formatCount(totals.reach), spark: series("reach") },
+    { label: dict.metrics.impressions, value: formatCount(totals.impressions), spark: series("impressions") },
+    { label: dict.metrics.engagements, value: formatCount(totals.engagements), spark: series("engagements") },
+    { label: dict.metrics.engagementRate, value: formatPercent(totals.engagementRate), spark: [] },
+    { label: dict.metrics.clicks, value: formatCount(totals.clicks), spark: series("clicks") },
+    { label: dict.metrics.spend, value: formatMoney(totals.spend, currency), spark: [] },
+    { label: dict.metrics.cpm, value: totals.cpm == null ? "—" : totals.cpm.toFixed(2), spark: [] },
+    { label: dict.metrics.cpe, value: totals.cpe == null ? "—" : totals.cpe.toFixed(2), spark: [] },
   ];
 
   return (
-    <dl className="grid grid-cols-2 divide-line rounded-lg border border-line bg-surface sm:grid-cols-4 sm:divide-x xl:grid-cols-8">
-      {items.map((item) => (
-        <div key={item.label} className="border-b border-line px-4 py-3 last:border-b-0 xl:border-b-0">
-          <dt className="eyebrow">{item.label}</dt>
-          <dd className="tnum mt-1 text-lg">{item.value}</dd>
+    <dl className="card grid grid-cols-2 overflow-hidden sm:grid-cols-4 xl:grid-cols-8">
+      {items.map((item, i) => (
+        <div
+          key={item.label}
+          className={cn(
+            "border-line p-4",
+            i % 2 === 0 && "border-e",
+            i < items.length - 2 && "border-b",
+            "sm:border-b-0 sm:border-e xl:[&:last-child]:border-e-0",
+          )}
+        >
+          <dt className="eyebrow truncate">{item.label}</dt>
+          <dd className="tnum mt-1.5 text-xl leading-none">{item.value}</dd>
+          <Spark points={item.spark} />
         </div>
       ))}
     </dl>
