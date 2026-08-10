@@ -59,7 +59,7 @@ export function TrendChart({ data, dict }: { data: Row[]; dict: Dictionary }) {
   return (
     <div className="card">
       <div className="flex items-center justify-between border-b border-line px-4 py-2">
-        <p className="eyebrow">{dict.campaign.lastDays(data.length)}</p>
+        <p className="eyebrow">{dict.campaign.lastDays.replace("{n}", String(data.length))}</p>
         <div className="flex gap-1" role="tablist">
           {TABS.map((t) => (
             <button

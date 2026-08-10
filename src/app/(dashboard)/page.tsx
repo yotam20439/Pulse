@@ -51,7 +51,7 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="eyebrow">{dict.common.across(new Set(rows.map((r) => r.brandName)).size)}</p>
+        <p className="eyebrow">{dict.common.across.replace("{n}", String(new Set(rows.map((r) => r.brandName)).size))}</p>
         <h1 className="mt-1 text-2xl font-semibold">{dict.nav.campaigns}</h1>
       </header>
 

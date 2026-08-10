@@ -89,7 +89,7 @@ export const en = {
     newCampaign: "New campaign",
     addPost: "Add post",
     edit: "Edit campaign",
-    lastDays: (n: number) => `Last ${n} days`,
+    lastDays: "Last {n} days",
     delivered: "Delivered",
     cost: "Cost",
     costPerEng: "Cost / eng.",
@@ -126,7 +126,7 @@ export const en = {
 
   common: {
     role: "your role",
-    across: (n: number) => `Across ${n} brands`,
+    across: "Across {n} brands",
     of: "of",
     all: "all",
     none: "none",
@@ -216,7 +216,7 @@ export const he: Dictionary = {
     newCampaign: "קמפיין חדש",
     addPost: "הוספת פוסט",
     edit: "עריכת קמפיין",
-    lastDays: (n: number) => `${n} הימים האחרונים`,
+    lastDays: "{n} הימים האחרונים",
     delivered: "סופק",
     cost: "עלות",
     costPerEng: "עלות לאינטראקציה",
@@ -253,7 +253,7 @@ export const he: Dictionary = {
 
   common: {
     role: "התפקיד שלך",
-    across: (n: number) => `${n} מותגים`,
+    across: "{n} מותגים",
     of: "מתוך",
     all: "הכל",
     none: "אין",
