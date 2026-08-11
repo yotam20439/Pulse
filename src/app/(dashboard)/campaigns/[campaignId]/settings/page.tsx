@@ -4,6 +4,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { ChevronLeft } from "lucide-react";
 
 import { CampaignForm } from "@/components/forms/campaign-form";
+import { ConfirmDelete } from "@/components/forms/confirm-delete";
 import { CreatorLinkAdd } from "@/components/forms/creator-link-add";
 import { PlatformBadge } from "@/components/platform-badge";
 import { db } from "@/db";
@@ -16,7 +17,12 @@ import {
   users,
 } from "@/db/schema";
 import { addCreatorByLink } from "@/lib/actions/creators";
-import { removeParticipant, setKpi, updateCampaign } from "@/lib/actions/entities";
+import {
+  deleteCampaign,
+  removeParticipant,
+  setKpi,
+  updateCampaign,
+} from "@/lib/actions/entities";
 import { getDictionary } from "@/lib/i18n";
 import { getCampaign } from "@/lib/queries/campaign";
 import { rankCreatorsForCampaign } from "@/lib/queries/creators";
@@ -131,7 +137,11 @@ export default async function CampaignSettingsPage({
                 </span>
                 <form action={removeParticipant}>
                   <input type="hidden" name="participantId" value={r.id} />
-                  <button type="submit" className="text-xs text-critical hover:underline">
+                  <button
+                    type="submit"
+                    title="Unbooks them from this campaign and removes their posts from its totals"
+                    className="text-xs text-critical hover:underline"
+                  >
                     Remove
                   </button>
                 </form>
@@ -263,6 +273,18 @@ export default async function CampaignSettingsPage({
           </button>
         </form>
       </section>
+      <section className="space-y-3 border-t border-line pt-8">
+        <h2 className="eyebrow">Danger zone</h2>
+        <ConfirmDelete
+          action={deleteCampaign}
+          confirmValue={campaign.name}
+          hidden={{ campaignId }}
+          triggerLabel="Delete this campaign"
+          title={`Delete ${campaign.name}?`}
+          consequence="Removes the campaign, its roster, every tracked post, and all metric history. Set the status to Archived instead if you only want it out of the way."
+        />
+      </section>
+
     </div>
   );
 }

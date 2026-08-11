@@ -1,10 +1,12 @@
 import { asc, eq } from "drizzle-orm";
 
+import { ConfirmDelete } from "@/components/forms/confirm-delete";
 import { NewUserForm, PasswordForm } from "@/components/forms/entity-forms";
 import { db } from "@/db";
 import { brandMembers, brands, users } from "@/db/schema";
 import {
   createUser,
+  deleteUser,
   grantBrand,
   revokeBrand,
   setActive,
@@ -199,6 +201,19 @@ export default async function PeoplePage() {
                   Permission changes take up to five minutes to reach a signed-in user, or apply
                   immediately after they sign out and back in.
                 </p>
+
+                {!isMe && (
+                  <div className="border-t border-line pt-4">
+                    <ConfirmDelete
+                      action={deleteUser}
+                      confirmValue={user.email}
+                      hidden={{ userId: user.id }}
+                      triggerLabel="Delete permanently"
+                      title={`Permanently delete ${user.email}?`}
+                      consequence="Deactivating is usually better: it blocks sign-in but keeps their name on past actions in the activity log. After deletion, everything they ever did reads as an unknown actor. Campaigns and brands they own stay, with the owner field emptied."
+                    />
+                  </div>
+                )}
               </div>
             </details>
           );

@@ -58,7 +58,7 @@ export function CreatorLinkAdd({
 
       <Field
         label="Paste profile or post links"
-        hint="Instagram, TikTok, YouTube, Facebook, X, LinkedIn, Telegram. Several at once is fine — they'll be grouped under one creator."
+        hint="Instagram and YouTube pull followers, average likes and engagement rate automatically. Other platforms are added without stats. Several links at once is fine — they group under one creator."
       >
         <textarea
           name="links"
@@ -141,8 +141,12 @@ export function CreatorLinkAdd({
       <FormMessage error={state.error} ok={state.ok} />
 
       <SubmitButton>
-        {campaignId ? "Add and book on this campaign" : "Add creator"}
+        {campaignId ? "Add and book on this campaign" : "Add creator and fetch stats"}
       </SubmitButton>
+
+      <p className="text-xs text-muted">
+        Fetching runs on submit and takes a few seconds per account.
+      </p>
 
       {suggestions.length > 0 && (
         <div className="space-y-2 border-t border-line pt-4">

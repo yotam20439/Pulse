@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -11,6 +12,7 @@ import {
   campaigns,
   influencerAccounts,
   influencers,
+  posts,
 } from "@/db/schema";
 import { isSuperAdmin, requireBrandAccess, requireUser } from "@/lib/rbac";
 import { parseMany, parseSocialLink, suggestName } from "@/lib/social-links";
@@ -102,6 +104,8 @@ export async function addCreatorByLink(
   const er = Number(formData.get("baselineEngagementRate") ?? 0);
 
   let attached = 0;
+  const newAccountIds: { id: string; platform: string; handle: string }[] = [];
+
   for (const link of links) {
     const [clash] = await db
       .select({ id: influencerAccounts.id })
@@ -118,17 +122,54 @@ export async function addCreatorByLink(
     // typed once shouldn't be silently copied onto three other platforms.
     const isFirst = attached === 0 && links.length === 1;
 
-    await db.insert(influencerAccounts).values({
-      influencerId,
-      platform: link.platform,
-      handle: link.handle,
-      profileUrl: link.profileUrl,
-      followerCount: isFirst && followers > 0 ? followers : null,
-      baselineEngagementRate: isFirst && er > 0 && er < 1 ? er : null,
-      statsSource: "manual",
-      followersSyncedAt: isFirst && followers > 0 ? new Date() : null,
-    });
+    const [inserted] = await db
+      .insert(influencerAccounts)
+      .values({
+        influencerId,
+        platform: link.platform,
+        handle: link.handle,
+        profileUrl: link.profileUrl,
+        followerCount: isFirst && followers > 0 ? followers : null,
+        baselineEngagementRate: isFirst && er > 0 && er < 1 ? er : null,
+        statsSource: "manual",
+        followersSyncedAt: isFirst && followers > 0 ? new Date() : null,
+      })
+      .returning({ id: influencerAccounts.id });
+
+    newAccountIds.push({ id: inserted.id, platform: link.platform, handle: link.handle });
     attached += 1;
+  }
+
+  /**
+   * Pull live stats for every account just created, so a pasted link produces
+   * numbers immediately rather than after a separate Refresh click.
+   *
+   * Failures are collected and reported, never thrown: a TikTok link with no
+   * vendor configured should still add the creator, just without stats. The
+   * whole batch is capped so one slow provider can't hang the form.
+   */
+  const fetched: string[] = [];
+  const unfetched: string[] = [];
+
+  if (newAccountIds.length > 0) {
+    const { syncAccount } = await import("@/lib/profile-sync");
+
+    const outcomes = await Promise.allSettled(
+      newAccountIds.map(async (account) => {
+        const result = await Promise.race([
+          syncAccount(account.id),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 12_000)),
+        ]);
+        return { account, result };
+      }),
+    );
+
+    for (const outcome of outcomes) {
+      if (outcome.status !== "fulfilled" || !outcome.value.result) continue;
+      const { account, result } = outcome.value;
+      if (result.status === "updated") fetched.push(`@${account.handle}`);
+      else unfetched.push(account.platform.toLowerCase());
+    }
   }
 
   await db.insert(auditLog).values({
@@ -182,15 +223,23 @@ export async function addCreatorByLink(
   revalidatePath(`/influencers/${influencerId}`);
 
   const skipped = links.length - attached;
-  return {
-    ok:
-      attached === 0
-        ? "Those accounts were already in the roster."
-        : `${created ? "Added" : "Updated"} creator with ${attached} account${attached === 1 ? "" : "s"}${
-            skipped > 0 ? ` (${skipped} already known)` : ""
-          }.`,
-    createdId: influencerId,
-  };
+
+  if (attached === 0) {
+    return { ok: "Those accounts were already in the roster.", createdId: influencerId };
+  }
+
+  const parts = [
+    `${created ? "Added" : "Updated"} creator with ${attached} account${attached === 1 ? "" : "s"}`,
+  ];
+  if (skipped > 0) parts.push(`${skipped} already known`);
+  if (fetched.length > 0) parts.push(`stats pulled for ${fetched.join(", ")}`);
+  if (unfetched.length > 0) {
+    parts.push(
+      `no provider for ${[...new Set(unfetched)].join(", ")} — enter those by hand`,
+    );
+  }
+
+  return { ok: `${parts.join(" · ")}.`, createdId: influencerId };
 }
 
 /** Adds one more platform to a creator who already exists. */
@@ -212,16 +261,28 @@ export async function addAccountToCreator(
     );
   if (clash) return { error: `@${link.handle} on ${link.platform.toLowerCase()} is already in the roster.` };
 
-  await db.insert(influencerAccounts).values({
-    influencerId,
-    platform: link.platform,
-    handle: link.handle,
-    profileUrl: link.profileUrl,
-    statsSource: "manual",
-  });
+  const [inserted] = await db
+    .insert(influencerAccounts)
+    .values({
+      influencerId,
+      platform: link.platform,
+      handle: link.handle,
+      profileUrl: link.profileUrl,
+      statsSource: "manual",
+    })
+    .returning({ id: influencerAccounts.id });
+
+  const { syncAccount } = await import("@/lib/profile-sync");
+  const outcome = await syncAccount(inserted.id);
 
   revalidatePath(`/influencers/${influencerId}`);
-  return { ok: `Added ${link.platform.toLowerCase()} account @${link.handle}.` };
+
+  return {
+    ok:
+      outcome.status === "updated"
+        ? `Added @${link.handle} and pulled their stats from ${link.platform.toLowerCase()}.`
+        : `Added @${link.handle}. ${outcome.reason ?? "Stats need entering by hand."}`,
+  };
 }
 
 /**
@@ -320,4 +381,61 @@ export async function refreshAccountStats(
   }
 
   return { error: outcome.reason ?? "Could not refresh." };
+}
+
+/**
+ * Permanently deletes a creator and every account, booking, post, and metric
+ * snapshot attached to them.
+ *
+ * Refuses while they have tracked posts. Those posts are the campaign record —
+ * removing a creator would silently reduce reach and engagement totals on
+ * campaigns that already happened, changing history that someone may have
+ * reported to a client. Unbook them from the campaign instead, which keeps the
+ * numbers intact.
+ */
+export async function deleteCreator(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertCanEditRoster();
+  const influencerId = String(formData.get("influencerId") ?? "");
+
+  const [creator] = await db.select().from(influencers).where(eq(influencers.id, influencerId));
+  if (!creator) return { error: "Creator not found." };
+
+  if (String(formData.get("confirm") ?? "").trim() !== creator.displayName) {
+    return { error: `Type the creator's name exactly to confirm: ${creator.displayName}` };
+  }
+
+  const [{ postCount }] = await db
+    .select({ postCount: sql<number>`count(*)`.mapWith(Number) })
+    .from(posts)
+    .innerJoin(campaignInfluencers, eq(posts.campaignInfluencerId, campaignInfluencers.id))
+    .where(eq(campaignInfluencers.influencerId, influencerId));
+
+  if (postCount > 0) {
+    const [{ campaignCount }] = await db
+      .select({ campaignCount: sql<number>`count(distinct ${campaignInfluencers.campaignId})`.mapWith(Number) })
+      .from(campaignInfluencers)
+      .where(eq(campaignInfluencers.influencerId, influencerId));
+
+    return {
+      error: `${creator.displayName} has ${postCount} tracked posts across ${campaignCount} campaign${campaignCount === 1 ? "" : "s"}. Deleting would change the totals on campaigns that already ran. Remove them from those campaigns first if you really want this.`,
+    };
+  }
+
+  // No posts: bookings and accounts cascade cleanly.
+  await db.delete(campaignInfluencers).where(eq(campaignInfluencers.influencerId, influencerId));
+  await db.delete(influencers).where(eq(influencers.id, influencerId));
+
+  await db.insert(auditLog).values({
+    actorId: user.id,
+    action: "creator.delete",
+    entity: "influencer",
+    entityId: influencerId,
+    diff: { displayName: creator.displayName },
+  });
+
+  revalidatePath("/influencers");
+  redirect("/influencers");
 }

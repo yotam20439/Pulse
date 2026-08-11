@@ -126,3 +126,56 @@ export async function revokeBrand(formData: FormData) {
   await record(actor.id, "user.brand_revoke", userId, { brandId });
   revalidatePath("/settings/people");
 }
+
+/**
+ * Permanently deletes a user account. Super admins only.
+ *
+ * Deactivating is almost always the better answer and the UI says so: a
+ * deactivated user can't sign in, but the audit trail still names them. After
+ * deletion, every action they ever took reads as "unknown" — which is a real
+ * loss on a tool where several people edit the same client's campaigns.
+ *
+ * What survives: campaigns and brands they created or owned (the owner field
+ * simply empties), and audit rows (the actor becomes null). What goes: their
+ * login, their brand grants, and their name against past actions.
+ */
+export async function deleteUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const actor = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+
+  if (userId === actor.id) {
+    return { error: "You can't delete your own account." };
+  }
+
+  const [target] = await db.select().from(users).where(eq(users.id, userId));
+  if (!target) return { error: "User not found." };
+
+  if (String(formData.get("confirm") ?? "").trim().toLowerCase() !== target.email.toLowerCase()) {
+    return { error: `Type the email exactly to confirm: ${target.email}` };
+  }
+
+  // Never leave a system with no way in.
+  if (target.systemRole === "SUPER_ADMIN") {
+    const remaining = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.systemRole, "SUPER_ADMIN"), eq(users.isActive, true)));
+
+    if (remaining.filter((u) => u.id !== userId).length === 0) {
+      return { error: "That's the last active super admin. Promote someone else first." };
+    }
+  }
+
+  await db.delete(users).where(eq(users.id, userId));
+
+  await db.insert(auditLog).values({
+    actorId: actor.id,
+    action: "user.delete",
+    entity: "user",
+    entityId: userId,
+    diff: { email: target.email, systemRole: target.systemRole },
+  });
+
+  revalidatePath("/settings/people");
+  return { ok: `Deleted ${target.email}.` };
+}

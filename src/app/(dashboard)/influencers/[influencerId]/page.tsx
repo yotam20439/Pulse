@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 
+import { ConfirmDelete } from "@/components/forms/confirm-delete";
 import {
   AccountStatsForm,
   AddAccountForm,
@@ -11,6 +12,7 @@ import { PlatformBadge } from "@/components/platform-badge";
 import { StatusPill } from "@/components/status-pill";
 import {
   addAccountToCreator,
+  deleteCreator,
   refreshAccountStats,
   updateAccountStats,
 } from "@/lib/actions/creators";
@@ -274,6 +276,18 @@ export default async function CreatorPage({
           </div>
         )}
       </section>
+      <section className="space-y-3 border-t border-line pt-8">
+        <h2 className="eyebrow">Danger zone</h2>
+        <ConfirmDelete
+          action={deleteCreator}
+          confirmValue={creator.displayName}
+          hidden={{ influencerId: creator.id }}
+          triggerLabel="Delete this creator"
+          title={`Delete ${creator.displayName}?`}
+          consequence="Removes them and all their social accounts. Blocked while they have tracked posts, because deleting would change the totals on campaigns that already ran."
+        />
+      </section>
+
     </div>
   );
 }
