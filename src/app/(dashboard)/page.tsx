@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { brands, campaigns } from "@/db/schema";
 import { accessibleBrandIds, requireUser } from "@/lib/rbac";
 import { getDictionary } from "@/lib/i18n";
+import { t } from "@/lib/i18n/dictionaries";
 import { formatMoney } from "@/lib/utils";
 
 export default async function OverviewPage() {
@@ -52,7 +53,7 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="eyebrow">{dict.common.across(new Set(rows.map((r) => r.brandName)).size)}</p>
+        <p className="eyebrow">{t(dict.common.across, { n: new Set(rows.map((r) => r.brandName)).size })}</p>
         <h1 className="mt-1 text-2xl font-semibold">{dict.nav.campaigns}</h1>
       </header>
 

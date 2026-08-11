@@ -116,7 +116,7 @@ export const en = {
     newCampaign: "New campaign",
     addPost: "Add post",
     edit: "Edit campaign",
-    lastDays: (n: number) => `Last ${n} days`,
+    lastDays: "Last {n} days",
     delivered: "Delivered",
     cost: "Cost",
     costPerEng: "Cost / eng.",
@@ -371,7 +371,7 @@ brandHasCampaignsTick: "Tick the box below to delete them too.",
 
   common: {
     role: "your role",
-    across: (n: number) => `Across ${n} brands`,
+    across: "Across {n} brands",
     of: "of",
     all: "all",
     none: "none",
@@ -491,7 +491,7 @@ export const he: Dictionary = {
     newCampaign: "קמפיין חדש",
     addPost: "הוספת פוסט",
     edit: "עריכת קמפיין",
-    lastDays: (n: number) => `${n} הימים האחרונים`,
+    lastDays: "{n} הימים האחרונים",
     delivered: "סופק",
     cost: "עלות",
     costPerEng: "עלות לאינטראקציה",
@@ -746,7 +746,7 @@ brandHasCampaignsTick: "סמנו את התיבה למטה כדי למחוק גם
 
   common: {
     role: "התפקיד שלך",
-    across: (n: number) => `${n} מותגים`,
+    across: "{n} מותגים",
     of: "מתוך",
     all: "הכל",
     none: "אין",
@@ -765,3 +765,18 @@ export function t(template: string, values: Record<string, string | number>) {
     key in values ? String(values[key]) : `{${key}}`,
   );
 }
+
+/**
+ * The dictionary is passed whole into client components, so every value must
+ * survive serialisation — strings only, never functions. A template like
+ * "Last {n} days" plus `t()` does what a `(n) => ...` helper would, and does
+ * not throw "Functions cannot be passed directly to Client Components" at
+ * runtime on whichever page happens to use it.
+ *
+ * This assertion makes that a compile-time error rather than a discovery.
+ */
+type AllStrings<T> = {
+  [K in keyof T]: T[K] extends string ? string : T[K] extends object ? AllStrings<T[K]> : never;
+};
+const _serialisable: AllStrings<Dictionary> = en;
+void _serialisable;
