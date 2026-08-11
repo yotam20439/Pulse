@@ -94,6 +94,7 @@ export default async function BrandsSettingsPage() {
                 users={userOptions}
                 dict={dict}
                 brand={brand}
+                campaignCount={brand.campaignCount}
               />
 
               <form action={setBrandActive} className="border-t border-line pt-4">

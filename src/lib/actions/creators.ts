@@ -425,7 +425,9 @@ export async function deleteCreator(
     .innerJoin(campaignInfluencers, eq(posts.campaignInfluencerId, campaignInfluencers.id))
     .where(eq(campaignInfluencers.influencerId, influencerId));
 
-  if (postCount > 0) {
+  const force = formData.get("force") === "on";
+
+  if (postCount > 0 && !force) {
     const [{ campaignCount }] = await db
       .select({ campaignCount: sql<number>`count(distinct ${campaignInfluencers.campaignId})`.mapWith(Number) })
       .from(campaignInfluencers)
@@ -440,7 +442,8 @@ export async function deleteCreator(
     };
   }
 
-  // No posts: bookings and accounts cascade cleanly.
+  // Bookings cascade to posts and their snapshots; accounts cascade from the
+  // creator row.
   await db.delete(campaignInfluencers).where(eq(campaignInfluencers.influencerId, influencerId));
   await db.delete(influencers).where(eq(influencers.id, influencerId));
 

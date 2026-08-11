@@ -297,6 +297,11 @@ export default async function CreatorPage({
           triggerLabel={dict.danger.deleteCreator}
           title={t(dict.danger.deleteCreatorTitle, { name: creator.displayName })}
           consequence={dict.danger.deleteCreatorWhat}
+          forceLabel={
+            observed.postCount > 0
+              ? t(dict.danger.forceCreator, { posts: observed.postCount })
+              : undefined
+          }
         />
       </section>
 

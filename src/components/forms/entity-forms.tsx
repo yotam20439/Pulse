@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { Field, FormMessage, Input, Select, SubmitButton, Textarea } from "@/components/ui/form";
 import { BrandMark } from "@/components/brand-mark";
+import { t } from "@/lib/i18n/dictionaries";
 import type { Dictionary } from "@/lib/i18n";
 import type { ActionState } from "@/lib/actions/entities";
 
@@ -80,11 +81,13 @@ export function BrandForm({
   users,
   dict,
   brand,
+  campaignCount = 0,
 }: {
   action: Action;
   deleteAction?: Action;
   users: { id: string; label: string }[];
   dict: Dictionary;
+  campaignCount?: number;
   brand?: {
     id: string;
     name: string;
@@ -194,7 +197,14 @@ export function BrandForm({
         </SubmitButton>
       </form>
 
-      {brand && deleteAction && <DeleteBrandForm action={deleteAction} brand={brand} dict={dict} />}
+      {brand && deleteAction && (
+        <DeleteBrandForm
+          action={deleteAction}
+          brand={brand}
+          dict={dict}
+          campaignCount={campaignCount}
+        />
+      )}
     </div>
   );
 }
@@ -208,10 +218,12 @@ function DeleteBrandForm({
   action,
   brand,
   dict,
+  campaignCount,
 }: {
   action: Action;
   brand: { id: string; name: string };
   dict: Dictionary;
+  campaignCount: number;
 }) {
   const [state, formAction] = useActionState(action, {});
   const [open, setOpen] = useState(false);
@@ -231,6 +243,15 @@ function DeleteBrandForm({
     <form action={formAction} className="space-y-3 rounded-lg border border-critical/30 bg-surface p-4">
       <input type="hidden" name="brandId" value={brand.id} />
       <p className="text-sm text-ink-soft">{dict.brand.deleteBlocked}</p>
+
+      {campaignCount > 0 && (
+        <label className="flex items-start gap-2.5 rounded-md border border-line bg-sunken/50 p-3 text-sm">
+          <input type="checkbox" name="force" value="on" className="mt-0.5 size-4 shrink-0" />
+          <span className="text-ink-soft">
+            {t(dict.danger.forceBrand, { count: campaignCount })}
+          </span>
+        </label>
+      )}
       <Field label={`Type "${brand.name}" to confirm`}>
         <Input name="confirm" autoComplete="off" />
       </Field>

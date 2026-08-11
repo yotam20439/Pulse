@@ -267,6 +267,9 @@ export const en = {
 
   danger: {
     zone: "Danger zone",
+    force: "Delete everything anyway",
+    forceBrand: "Also delete its {count} campaigns, their posts, and all metric history. This cannot be undone.",
+    forceCreator: "Also delete their {posts} tracked posts. Totals on campaigns that already ran will change.",
     typeToConfirm: "Type \"{value}\" to confirm",
     deleteCampaign: "Delete this campaign",
     deleteCampaignTitle: "Delete {name}?",
@@ -320,6 +323,7 @@ export const en = {
     notFound: "Not found.",
     typeNameToConfirm: "Type the name exactly to confirm: {name}",
     typeEmailToConfirm: "Type the email exactly to confirm: {email}",
+brandHasCampaignsTick: "Tick the box below to delete them too.",
     brandHasCampaigns: "{name} has {count} campaigns and their metric history. Archive it instead — deletion would destroy the record permanently.",
     creatorHasPosts: "{name} has {posts} tracked posts across {campaigns} campaigns. Deleting would change the totals on campaigns that already ran. Remove them from those campaigns first if you really want this.",
     cantDeleteSelf: "You can't delete your own account.",
@@ -638,6 +642,9 @@ export const he: Dictionary = {
 
   danger: {
     zone: "אזור מסוכן",
+    force: "למחוק הכל בכל זאת",
+    forceBrand: "למחוק גם את {count} הקמפיינים שלו, הפוסטים וכל היסטוריית הנתונים. לא ניתן לבטל.",
+    forceCreator: "למחוק גם את {posts} הפוסטים במעקב. סיכומים של קמפיינים שכבר רצו ישתנו.",
     typeToConfirm: "הקלידו \"{value}\" לאישור",
     deleteCampaign: "מחיקת הקמפיין",
     deleteCampaignTitle: "למחוק את {name}?",
@@ -691,6 +698,7 @@ export const he: Dictionary = {
     notFound: "לא נמצא.",
     typeNameToConfirm: "הקלידו את השם במדויק לאישור: {name}",
     typeEmailToConfirm: "הקלידו את האימייל במדויק לאישור: {email}",
+brandHasCampaignsTick: "סמנו את התיבה למטה כדי למחוק גם אותם.",
     brandHasCampaigns: "ל{name} יש {count} קמפיינים והיסטוריית נתונים. העבירו לארכיון במקום — מחיקה תשמיד את הרשומות לצמיתות.",
     creatorHasPosts: "ל{name} יש {posts} פוסטים במעקב ב-{campaigns} קמפיינים. מחיקה תשנה סיכומים של קמפיינים שכבר רצו. הסירו אותו מהקמפיינים תחילה אם אתם באמת רוצים בכך.",
     cantDeleteSelf: "לא ניתן למחוק את החשבון שלכם.",

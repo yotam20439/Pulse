@@ -25,6 +25,7 @@ export function ConfirmDelete({
   triggerLabel,
   title,
   consequence,
+  forceLabel,
   dict,
 }: {
   action: Action;
@@ -34,6 +35,8 @@ export function ConfirmDelete({
   triggerLabel: string;
   title: string;
   consequence: string;
+  /** When set, renders an opt-in checkbox that overrides the safety guard. */
+  forceLabel?: string;
   dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(action, {});
@@ -62,6 +65,13 @@ export function ConfirmDelete({
         <p className="text-sm font-medium">{title}</p>
         <p className="mt-1 text-sm text-ink-soft">{consequence}</p>
       </div>
+
+      {forceLabel && (
+        <label className="flex items-start gap-2.5 rounded-md border border-line bg-sunken/50 p-3 text-sm">
+          <input type="checkbox" name="force" value="on" className="mt-0.5 size-4 shrink-0" />
+          <span className="text-ink-soft">{forceLabel}</span>
+        </label>
+      )}
 
       <Field label={t(dict.danger.typeToConfirm, { value: confirmValue })}>
         <Input

@@ -460,10 +460,18 @@ export async function deleteBrand(_prev: ActionState, formData: FormData): Promi
     .from(campaigns)
     .where(eq(campaigns.brandId, brandId));
 
-  if (count > 0) {
-    return { error: t(d.errors.brandHasCampaigns, { name: brand.name, count }) };
+  // The guard is a speed bump, not a wall: ticking the box in the form is an
+  // explicit second decision, on top of typing the name. Without it, someone
+  // who genuinely wants the brand gone has no route except raw SQL.
+  const force = formData.get("force") === "on";
+
+  if (count > 0 && !force) {
+    return {
+      error: `${t(d.errors.brandHasCampaigns, { name: brand.name, count })} ${d.errors.brandHasCampaignsTick}`,
+    };
   }
 
+  // Campaigns, posts, snapshots, and rollups all cascade from the brand row.
   await db.delete(brands).where(eq(brands.id, brandId));
   await record(user.id, null, "brand.delete", "brand", brandId, { name: brand.name });
   revalidatePath("/settings/brands");
