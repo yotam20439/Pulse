@@ -83,17 +83,14 @@ export default async function InfluencersPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold">{dict.nav.influencers}</h1>
-        <p className="mt-1 text-sm text-muted">
-          Paste any profile link to add someone. Existing handles attach to the creator already on
-          file rather than creating a duplicate.
-        </p>
+        <p className="mt-1 text-sm text-muted">{dict.creator.rosterIntro}</p>
       </header>
 
-      <CreatorLinkAdd action={addCreatorByLink} />
+      <CreatorLinkAdd action={addCreatorByLink} dict={dict} />
 
       {list.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line-strong bg-surface p-8 text-center text-sm text-muted">
-          No creators yet.
+          {dict.creator.noCreators}
         </p>
       ) : (
         <section className="space-y-3">
@@ -106,7 +103,7 @@ export default async function InfluencersPage() {
               <thead>
                 <tr className="border-b border-line">
                   <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.creators}</th>
-                  <th className="eyebrow px-4 py-3 text-start font-normal">Accounts</th>
+                  <th className="eyebrow px-4 py-3 text-start font-normal">{dict.common.accounts}</th>
                   <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.followers}</th>
                   <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.engagementRate}</th>
                   <th className="eyebrow px-4 py-3 text-end font-normal">{dict.nav.campaigns}</th>

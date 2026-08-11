@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { Field, FormMessage, Input, SubmitButton } from "@/components/ui/form";
 import type { ActionState } from "@/lib/actions/creators";
+import { t, type Dictionary } from "@/lib/i18n/dictionaries";
 
 type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
 
@@ -11,8 +12,10 @@ type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
 export function AccountStatsForm({
   action,
   account,
+  dict,
 }: {
   action: Action;
+  dict: Dictionary;
   account: {
     id: string;
     followerCount: number | null;
@@ -29,19 +32,19 @@ export function AccountStatsForm({
       <input type="hidden" name="accountId" value={account.id} />
 
       <div className="grid gap-3 sm:grid-cols-5">
-        <Field label="Followers">
+        <Field label={dict.creator.followersLabel}>
           <Input name="followerCount" type="number" min={0} defaultValue={account.followerCount ?? ""} />
         </Field>
-        <Field label="Avg likes">
+        <Field label={dict.creator.avgLikes}>
           <Input name="avgLikes" type="number" min={0} defaultValue={account.avgLikes ?? ""} />
         </Field>
-        <Field label="Avg comments">
+        <Field label={dict.creator.avgComments}>
           <Input name="avgComments" type="number" min={0} defaultValue={account.avgComments ?? ""} />
         </Field>
-        <Field label="Avg views">
+        <Field label={dict.creator.avgViews}>
           <Input name="avgViews" type="number" min={0} defaultValue={account.avgViews ?? ""} />
         </Field>
-        <Field label="Eng. rate">
+        <Field label={dict.metrics.engagementRate}>
           <Input
             name="baselineEngagementRate"
             type="number"
@@ -54,7 +57,7 @@ export function AccountStatsForm({
       </div>
 
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton variant="ghost">Save stats</SubmitButton>
+      <SubmitButton variant="ghost" pendingLabel={dict.common.working}>{dict.creator.saveStats}</SubmitButton>
     </form>
   );
 }
@@ -63,19 +66,21 @@ export function AccountStatsForm({
 export function AddAccountForm({
   action,
   influencerId,
+  dict,
 }: {
   action: Action;
   influencerId: string;
+  dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(action, {});
 
   return (
     <form action={formAction} className="card flex flex-wrap items-end gap-3 p-4">
       <input type="hidden" name="influencerId" value={influencerId} />
-      <Field label="Add another platform" className="min-w-64 flex-1">
+      <Field label={dict.creator.addPlatform} className="min-w-64 flex-1">
         <Input name="url" type="url" required placeholder="https://www.tiktok.com/@handle" />
       </Field>
-      <SubmitButton variant="ghost">Add account</SubmitButton>
+      <SubmitButton variant="ghost" pendingLabel={dict.common.working}>{dict.creator.addAccount}</SubmitButton>
       {state.error && <p className="w-full text-xs text-critical">{state.error}</p>}
       {state.ok && <p className="w-full text-xs text-positive">{state.ok}</p>}
     </form>
@@ -89,12 +94,14 @@ export function RefreshStatsForm({
   accountId,
   influencerId,
   provider,
+  dict,
 }: {
   action: Action;
   accountId: string;
   influencerId: string;
   /** null when no provider is configured for this platform. */
   provider: string | null;
+  dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(action, {});
 
@@ -102,12 +109,12 @@ export function RefreshStatsForm({
     <form action={formAction} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="accountId" value={accountId} />
       <input type="hidden" name="influencerId" value={influencerId} />
-      <SubmitButton variant="ghost">
-        {provider ? `Refresh from ${provider}` : "Refresh"}
+      <SubmitButton variant="ghost" pendingLabel={dict.common.working}>
+        {provider ? t(dict.creator.refreshFrom, { provider }) : dict.creator.refresh}
       </SubmitButton>
       {!provider && (
         <span className="text-xs text-muted">
-          No provider configured for this platform — see DEPLOYING.md.
+          {dict.creator.noProvider}
         </span>
       )}
       {state.error && <span className="text-xs text-warning">{state.error}</span>}

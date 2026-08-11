@@ -20,6 +20,7 @@ import { getProfileCollector } from "@/lib/profile-collectors";
 import { registerAllProfileCollectors } from "@/lib/profile-collectors/register";
 import { audienceTier, scoreBand } from "@/lib/creator-score";
 import { getDictionary } from "@/lib/i18n";
+import { t } from "@/lib/i18n/dictionaries";
 import { getCreatorScore } from "@/lib/queries/creators";
 import { requireUser } from "@/lib/rbac";
 import { cn, formatCount, formatMoney, formatPercent } from "@/lib/utils";
@@ -46,13 +47,19 @@ export default async function CreatorPage({
 
   const { creator, observed, history, score, confidence, components, usedObservedMetrics } = result;
   const band = scoreBand(score);
+  const bandLabel = {
+    "Strong fit": dict.creator.strongFit,
+    "Reasonable fit": dict.creator.reasonableFit,
+    "Weak fit": dict.creator.weakFit,
+    "Poor fit": dict.creator.poorFit,
+  }[band.label];
   const totalFollowers = creator.accounts.reduce((s, a) => s + (a.followerCount ?? 0), 0);
 
   const componentLabels: [string, number][] = [
-    ["Engagement", components.engagement],
-    ["Consistency", components.consistency],
-    ["Growth", components.growth],
-    ["Reliability", components.reliability],
+    [dict.creator.engagement, components.engagement],
+    [dict.creator.consistency, components.consistency],
+    [dict.creator.growth, components.growth],
+    [dict.creator.reliability, components.reliability],
   ];
 
   return (
@@ -63,7 +70,7 @@ export default async function CreatorPage({
           <h1 className="mt-1 text-2xl font-semibold">{creator.displayName}</h1>
           <p className="tnum mt-1.5 text-sm text-muted">
             {formatCount(totalFollowers)} {dict.metrics.followers} ·{" "}
-            {audienceTier(totalFollowers)} · {creator.accounts.length} accounts
+            {audienceTier(totalFollowers)} · {creator.accounts.length} {dict.common.accounts.toLowerCase()}
           </p>
           {creator.tags.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-1.5">
@@ -78,7 +85,7 @@ export default async function CreatorPage({
 
         {/* Quality score, with the confidence stated rather than implied. */}
         <div className="card min-w-56 p-5">
-          <p className="eyebrow">Creator score</p>
+          <p className="eyebrow">{dict.creator.score}</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="tnum text-4xl font-medium leading-none">{score.toFixed(0)}</span>
             <span className="text-xs text-muted">/ 100</span>
@@ -91,7 +98,7 @@ export default async function CreatorPage({
               band.tone === "critical" && "text-critical",
             )}
           >
-            {band.label}
+            {bandLabel}
           </p>
 
           <dl className="mt-4 space-y-1.5 border-t border-line pt-3">
@@ -110,31 +117,29 @@ export default async function CreatorPage({
           </dl>
 
           <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
-            {Math.round(confidence * 100)}% confidence ·{" "}
+            {Math.round(confidence * 100)}% {dict.creator.confidence} ·{" "}
             {usedObservedMetrics
-              ? `based on ${observed.measuredCount} tracked posts`
-              : "based on entered profile stats only"}
+              ? t(dict.creator.confidenceFrom, { n: observed.measuredCount })
+              : dict.creator.confidenceManual}
           </p>
         </div>
       </header>
 
       {/* Observed vs claimed. This contrast is the reason the page exists. */}
       <section className="space-y-3">
-        <h2 className="eyebrow">Measured from tracked posts</h2>
+        <h2 className="eyebrow">{dict.creator.measured}</h2>
         {observed.measuredCount === 0 ? (
           <p className="rounded-lg border border-dashed border-line-strong bg-surface p-6 text-sm text-muted">
-            Nothing measured yet. These fill in automatically once this creator has posts on a
-            campaign and the collector has run — and once they do, the score stops relying on
-            numbers typed in by hand.
+            {dict.creator.noMeasured}
           </p>
         ) : (
           <dl className="card grid grid-cols-2 overflow-hidden sm:grid-cols-5">
             {[
               { label: dict.metrics.engagementRate, value: formatPercent(observed.engagementRate) },
-              { label: `Avg ${dict.metrics.likes.toLowerCase()}`, value: formatCount(observed.avgLikes) },
-              { label: `Avg ${dict.metrics.comments.toLowerCase()}`, value: formatCount(observed.avgComments) },
-              { label: `Avg ${dict.metrics.views.toLowerCase()}`, value: formatCount(observed.avgViews) },
-              { label: `Avg ${dict.metrics.reach.toLowerCase()}`, value: formatCount(observed.avgReach) },
+              { label: dict.creator.avgLikes, value: formatCount(observed.avgLikes) },
+              { label: dict.creator.avgComments, value: formatCount(observed.avgComments) },
+              { label: dict.creator.avgViews, value: formatCount(observed.avgViews) },
+              { label: dict.metrics.reach, value: formatCount(observed.avgReach) },
             ].map((item) => (
               <div key={item.label} className="border-e border-line p-4 last:border-e-0">
                 <dt className="eyebrow truncate">{item.label}</dt>
@@ -144,12 +149,15 @@ export default async function CreatorPage({
           </dl>
         )}
         <p className="text-xs text-muted">
-          {observed.measuredCount} of {observed.postCount} tracked posts have metrics.
+          {t(dict.creator.measuredCount, {
+            measured: observed.measuredCount,
+            total: observed.postCount,
+          })}
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">Social accounts</h2>
+        <h2 className="eyebrow">{dict.creator.accounts}</h2>
 
         <ul className="space-y-3">
           {creator.accounts.map((account) => (
@@ -177,8 +185,8 @@ export default async function CreatorPage({
                     className="rounded-full bg-sunken px-2 py-0.5"
                     title={
                       account.statsSource === "manual"
-                        ? "Entered by hand"
-                        : "Fetched from the platform"
+                        ? dict.creator.sourceManual
+                        : dict.creator.sourceApi
                     }
                   >
                     {account.statsSource}
@@ -193,6 +201,7 @@ export default async function CreatorPage({
                   action={refreshAccountStats}
                   accountId={account.id}
                   influencerId={creator.id}
+                  dict={dict}
                   provider={
                     getProfileCollector(account.platform)?.isConfigured()
                       ? getProfileCollector(account.platform)!.source
@@ -202,10 +211,10 @@ export default async function CreatorPage({
 
                 <details>
                   <summary className="cursor-pointer text-xs text-muted hover:text-ink">
-                    Enter stats manually
+                    {dict.creator.enterManually}
                   </summary>
                   <div className="pt-3">
-                    <AccountStatsForm action={updateAccountStats} account={account} />
+                    <AccountStatsForm action={updateAccountStats} account={account} dict={dict} />
                   </div>
                 </details>
               </div>
@@ -213,15 +222,17 @@ export default async function CreatorPage({
           ))}
         </ul>
 
-        <AddAccountForm action={addAccountToCreator} influencerId={creator.id} />
+        <AddAccountForm action={addAccountToCreator} influencerId={creator.id} dict={dict} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">Campaign history ({history.length})</h2>
+        <h2 className="eyebrow">
+          {dict.creator.history} ({history.length})
+        </h2>
 
         {history.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line-strong bg-surface p-6 text-sm text-muted">
-            Not booked on anything yet.
+            {dict.creator.noHistory}
           </p>
         ) : (
           <div className="card overflow-hidden">
@@ -277,14 +288,15 @@ export default async function CreatorPage({
         )}
       </section>
       <section className="space-y-3 border-t border-line pt-8">
-        <h2 className="eyebrow">Danger zone</h2>
+        <h2 className="eyebrow">{dict.danger.zone}</h2>
         <ConfirmDelete
           action={deleteCreator}
           confirmValue={creator.displayName}
           hidden={{ influencerId: creator.id }}
-          triggerLabel="Delete this creator"
-          title={`Delete ${creator.displayName}?`}
-          consequence="Removes them and all their social accounts. Blocked while they have tracked posts, because deleting would change the totals on campaigns that already ran."
+          dict={dict}
+          triggerLabel={dict.danger.deleteCreator}
+          title={t(dict.danger.deleteCreatorTitle, { name: creator.displayName })}
+          consequence={dict.danger.deleteCreatorWhat}
         />
       </section>
 

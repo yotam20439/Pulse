@@ -47,7 +47,7 @@ export default async function BrandsSettingsPage() {
   return (
     <div className="space-y-8">
       <section className="space-y-3">
-        <h2 className="eyebrow">New brand</h2>
+        <h2 className="eyebrow">{dict.brand.newBrand}</h2>
         <BrandForm action={createBrand} users={userOptions} dict={dict} />
       </section>
 
@@ -106,7 +106,7 @@ export default async function BrandsSettingsPage() {
                   {brand.isActive ? dict.brand.archive : dict.brand.unarchive}
                 </button>
                 <span className="ms-3 text-xs text-muted">
-                  Archiving hides the brand without touching its campaigns or history.
+                  {dict.brand.archiveHint}
                 </span>
               </form>
             </div>

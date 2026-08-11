@@ -58,10 +58,13 @@ export function SubmitButton({
   children,
   variant = "primary",
   className,
+  pendingLabel = "Working…",
 }: {
   children: React.ReactNode;
   variant?: "primary" | "ghost" | "danger";
   className?: string;
+  /** Pass dict.common.working so the busy state matches the locale. */
+  pendingLabel?: string;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -76,7 +79,7 @@ export function SubmitButton({
         className,
       )}
     >
-      {pending ? "Working…" : children}
+      {pending ? pendingLabel : children}
     </button>
   );
 }

@@ -14,50 +14,58 @@ const POST_TYPES = ["POST", "REEL", "STORY", "CAROUSEL", "TIKTOK", "SHORT", "VID
 
 /* --------------------------------- users ---------------------------------- */
 
-export function NewUserForm({ action }: { action: Action }) {
+export function NewUserForm({ action, dict }: { action: Action; dict: Dictionary }) {
   const [state, formAction] = useActionState(action, {});
 
   return (
     <form action={formAction} className="space-y-4 rounded-lg border border-line bg-surface p-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Email" htmlFor="email">
+        <Field label={dict.auth.email} htmlFor="email">
           <Input id="email" name="email" type="email" required autoComplete="off" />
         </Field>
-        <Field label="Name" htmlFor="name">
+        <Field label={dict.people.name} htmlFor="name">
           <Input id="name" name="name" autoComplete="off" />
         </Field>
         <Field
-          label="System role"
+          label={dict.people.systemRole}
           htmlFor="systemRole"
-          hint="SUPER_ADMIN bypasses brand permissions entirely."
+          hint={dict.people.systemRoleHint}
         >
           <Select id="systemRole" name="systemRole" defaultValue="STAFF">
-            <option value="STAFF">Staff — assigned brands only</option>
-            <option value="CLIENT">Client — assigned brands, read-mostly</option>
-            <option value="SUPER_ADMIN">Super admin — every brand</option>
+            <option value="STAFF">{dict.people.staff}</option>
+            <option value="CLIENT">{dict.people.client}</option>
+            <option value="SUPER_ADMIN">{dict.people.superAdmin}</option>
           </Select>
         </Field>
-        <Field label="Temporary password" htmlFor="password" hint="At least 8 characters.">
+        <Field label={dict.people.tempPassword} htmlFor="password" hint={dict.people.tempPasswordHint}>
           <Input id="password" name="password" type="text" required minLength={8} autoComplete="off" />
         </Field>
       </div>
 
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>Create user</SubmitButton>
+      <SubmitButton pendingLabel={dict.common.working}>{dict.people.createUser}</SubmitButton>
     </form>
   );
 }
 
-export function PasswordForm({ action, userId }: { action: Action; userId: string }) {
+export function PasswordForm({
+  action,
+  userId,
+  dict,
+}: {
+  action: Action;
+  userId: string;
+  dict: Dictionary;
+}) {
   const [state, formAction] = useActionState(action, {});
 
   return (
     <form action={formAction} className="flex items-end gap-2">
       <input type="hidden" name="userId" value={userId} />
-      <Field label="New password" className="flex-1">
+      <Field label={dict.people.newPassword} className="flex-1">
         <Input name="password" type="text" minLength={8} placeholder="min 8 characters" />
       </Field>
-      <SubmitButton variant="ghost">Reset</SubmitButton>
+      <SubmitButton variant="ghost" pendingLabel={dict.common.working}>{dict.people.reset}</SubmitButton>
       {state.error && <span className="pb-2 text-xs text-critical">{state.error}</span>}
       {state.ok && <span className="pb-2 text-xs text-positive">{state.ok}</span>}
     </form>
@@ -105,13 +113,13 @@ export function BrandForm({
           <div className="min-w-0">
             <p className="truncate font-medium">{name || "—"}</p>
             <p className="text-xs text-muted">
-              {logo ? "Logo" : "Monogram fallback"}
+              {logo ? dict.brand.logoPreview : dict.brand.monogramFallback}
             </p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Brand name">
+          <Field label={dict.brand.name}>
             <Input
               name="name"
               required
@@ -119,7 +127,7 @@ export function BrandForm({
               onChange={(e) => setName(e.target.value)}
             />
           </Field>
-          <Field label="Industry">
+          <Field label={dict.brand.industry}>
             <Input name="industry" defaultValue={brand?.industry ?? ""} />
           </Field>
 
@@ -144,7 +152,7 @@ export function BrandForm({
             </Select>
           </Field>
 
-          <Field label="Accent colour">
+          <Field label={dict.brand.accent}>
             <Input
               name="accentColor"
               type="color"
@@ -155,14 +163,14 @@ export function BrandForm({
           </Field>
 
           {!brand && (
-            <Field label="Slug" hint="Left blank, it's derived from the name.">
+            <Field label={dict.brand.slug} hint={dict.brand.slugHint}>
               <Input name="slug" placeholder="auto" />
             </Field>
           )}
 
           <Field
-            label="Baseline monthly impressions"
-            hint="The Prominence Index scores campaigns against this."
+            label={dict.brand.baseline}
+            hint={dict.brand.baselineHint}
             className={brand ? "sm:col-span-2" : ""}
           >
             <Input
@@ -181,7 +189,9 @@ export function BrandForm({
         </div>
 
         <FormMessage error={state.error} ok={state.ok} />
-        <SubmitButton>{brand ? "Save brand" : "Create brand"}</SubmitButton>
+        <SubmitButton pendingLabel={dict.common.working}>
+          {brand ? dict.brand.save : dict.brand.create}
+        </SubmitButton>
       </form>
 
       {brand && deleteAction && <DeleteBrandForm action={deleteAction} brand={brand} dict={dict} />}
@@ -239,72 +249,25 @@ function DeleteBrandForm({
   );
 }
 
-/* ------------------------------ influencers ------------------------------- */
-
-export function InfluencerForm({ action }: { action: Action }) {
-  const [state, formAction] = useActionState(action, {});
-
-  return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-line bg-surface p-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Creator name" htmlFor="displayName">
-          <Input id="displayName" name="displayName" required />
-        </Field>
-        <Field label="Platform">
-          <Select name="platform" defaultValue="INSTAGRAM">
-            {PLATFORMS.map((p) => (
-              <option key={p} value={p}>
-                {p.toLowerCase()}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Handle" hint="Without the @.">
-          <Input name="handle" required placeholder="creatorname" />
-        </Field>
-        <Field label="Profile URL">
-          <Input name="profileUrl" type="url" required placeholder="https://instagram.com/…" />
-        </Field>
-        <Field label="Followers">
-          <Input name="followerCount" type="number" min={0} />
-        </Field>
-        <Field
-          label="Baseline engagement rate"
-          hint="As a decimal — 0.045 for 4.5%. Effectiveness is measured as lift over this."
-        >
-          <Input name="baselineEngagementRate" type="number" step="0.001" min="0" max="1" />
-        </Field>
-        <Field label="Contact email">
-          <Input name="email" type="email" />
-        </Field>
-        <Field label="Agency">
-          <Input name="agency" />
-        </Field>
-      </div>
-
-      <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>Add creator</SubmitButton>
-    </form>
-  );
-}
-
 /* --------------------------------- posts ---------------------------------- */
 
 export function PostForm({
   action,
   campaignId,
   participants,
+  dict,
 }: {
   action: Action;
   campaignId: string;
   participants: { id: string; label: string }[];
+  dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(action, {});
 
   if (participants.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-line-strong bg-surface p-8 text-center text-sm text-muted">
-        Add creators to this campaign first — a post has to belong to someone on the roster.
+        {dict.campaign.noRosterYet}
       </p>
     );
   }
@@ -313,12 +276,12 @@ export function PostForm({
     <form action={formAction} className="space-y-4 rounded-lg border border-line bg-surface p-5">
       <input type="hidden" name="campaignId" value={campaignId} />
 
-      <Field label="Post URL" hint="The platform is detected from the link.">
+      <Field label={dict.campaign.postUrl} hint={dict.campaign.postUrlHint}>
         <Input name="url" type="url" required placeholder="https://www.instagram.com/p/…" />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Creator">
+        <Field label={dict.metrics.creators}>
           <Select name="participantId" required>
             {participants.map((p) => (
               <option key={p.id} value={p.id}>
@@ -327,7 +290,7 @@ export function PostForm({
             ))}
           </Select>
         </Field>
-        <Field label="Format">
+        <Field label={dict.campaign.format}>
           <Select name="postType" defaultValue="REEL">
             {POST_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -336,16 +299,16 @@ export function PostForm({
             ))}
           </Select>
         </Field>
-        <Field label="Published" hint="Defaults to now.">
+        <Field label={dict.campaign.published} hint={dict.campaign.publishedHint}>
           <Input name="publishedAt" type="datetime-local" />
         </Field>
-        <Field label="Caption">
+        <Field label={dict.campaign.caption}>
           <Input name="caption" />
         </Field>
       </div>
 
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>Start tracking</SubmitButton>
+      <SubmitButton pendingLabel={dict.common.working}>{dict.campaign.startTracking}</SubmitButton>
     </form>
   );
 }

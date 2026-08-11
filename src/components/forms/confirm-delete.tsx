@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 import { Field, FormMessage, Input, SubmitButton } from "@/components/ui/form";
+import { t, type Dictionary } from "@/lib/i18n/dictionaries";
 
 type ActionState = { error?: string; ok?: string };
 type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
@@ -24,6 +25,7 @@ export function ConfirmDelete({
   triggerLabel,
   title,
   consequence,
+  dict,
 }: {
   action: Action;
   /** The exact string the user must type — usually the record's name. */
@@ -32,6 +34,7 @@ export function ConfirmDelete({
   triggerLabel: string;
   title: string;
   consequence: string;
+  dict: Dictionary;
 }) {
   const [state, formAction] = useActionState(action, {});
   const [open, setOpen] = useState(false);
@@ -60,7 +63,7 @@ export function ConfirmDelete({
         <p className="mt-1 text-sm text-ink-soft">{consequence}</p>
       </div>
 
-      <Field label={`Type "${confirmValue}" to confirm`}>
+      <Field label={t(dict.danger.typeToConfirm, { value: confirmValue })}>
         <Input
           name="confirm"
           autoComplete="off"
@@ -72,7 +75,9 @@ export function ConfirmDelete({
       <FormMessage error={state.error} ok={state.ok} />
 
       <div className="flex gap-2">
-        <SubmitButton variant="danger">{triggerLabel}</SubmitButton>
+        <SubmitButton variant="danger" pendingLabel={dict.common.working}>
+          {triggerLabel}
+        </SubmitButton>
         <button
           type="button"
           onClick={() => {
@@ -81,7 +86,7 @@ export function ConfirmDelete({
           }}
           className="h-9 rounded-md border border-line px-4 text-sm hover:bg-sunken"
         >
-          Cancel
+          {dict.common.cancel}
         </button>
       </div>
     </form>

@@ -13,12 +13,14 @@ import {
   setPassword,
   setSystemRole,
 } from "@/lib/actions/users";
+import { getDictionary } from "@/lib/i18n";
+import { t } from "@/lib/i18n/dictionaries";
 import { requireUser } from "@/lib/rbac";
 
 export const metadata = { title: "People" };
 
 export default async function PeoplePage() {
-  const me = await requireUser();
+  const [me, dict] = await Promise.all([requireUser(), getDictionary()]);
 
   const [userRows, brandRows, grants] = await Promise.all([
     db.select().from(users).orderBy(asc(users.email)),
@@ -40,16 +42,15 @@ export default async function PeoplePage() {
   return (
     <div className="space-y-8">
       <section className="space-y-3">
-        <h2 className="eyebrow">Add someone</h2>
-        <p className="max-w-2xl text-sm text-muted">
-          There is no self-signup: an account exists only if you create it here. Send the temporary
-          password over a channel you trust, and reset it if it ever goes astray.
-        </p>
-        <NewUserForm action={createUser} />
+        <h2 className="eyebrow">{dict.people.addSomeone}</h2>
+        <p className="max-w-2xl text-sm text-muted">{dict.people.addHint}</p>
+        <NewUserForm action={createUser} dict={dict} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">People ({userRows.length})</h2>
+        <h2 className="eyebrow">
+          {dict.nav.people} ({userRows.length})
+        </h2>
 
         {userRows.map((user) => {
           const userGrants = grantsFor(user.id);
@@ -61,13 +62,13 @@ export default async function PeoplePage() {
               <summary className="flex cursor-pointer flex-wrap items-center gap-3 px-5 py-4 text-sm">
                 <span className="font-medium">{user.name ?? user.email}</span>
                 <span className="text-muted">{user.email}</span>
-                {isMe && <span className="eyebrow">you</span>}
+                {isMe && <span className="eyebrow">{dict.people.you}</span>}
 
                 <span className="ml-auto flex items-center gap-3">
-                  {!user.isActive && <span className="text-xs text-critical">deactivated</span>}
+                  {!user.isActive && <span className="text-xs text-critical">{dict.people.deactivated}</span>}
                   <span className="eyebrow">{user.systemRole.replace("_", " ").toLowerCase()}</span>
                   <span className="tnum text-xs text-muted">
-                    {superAdmin ? "all brands" : `${userGrants.length} brands`}
+                    {superAdmin ? dict.people.allBrands : t(dict.people.brandsCount, { n: userGrants.length })}
                   </span>
                 </span>
               </summary>
@@ -77,16 +78,16 @@ export default async function PeoplePage() {
                   <form action={setSystemRole} className="flex items-end gap-2">
                     <input type="hidden" name="userId" value={user.id} />
                     <div>
-                      <label className="eyebrow">System role</label>
+                      <label className="eyebrow">{dict.people.systemRole}</label>
                       <select
                         name="systemRole"
                         defaultValue={user.systemRole}
                         disabled={isMe}
                         className="mt-1.5 h-10 rounded-md border border-line bg-surface px-3 text-sm disabled:opacity-50"
                       >
-                        <option value="STAFF">Staff</option>
-                        <option value="CLIENT">Client</option>
-                        <option value="SUPER_ADMIN">Super admin</option>
+                        <option value="STAFF">{dict.people.staff}</option>
+                        <option value="CLIENT">{dict.people.client}</option>
+                        <option value="SUPER_ADMIN">{dict.people.superAdmin}</option>
                       </select>
                     </div>
                     <button
@@ -94,7 +95,7 @@ export default async function PeoplePage() {
                       disabled={isMe}
                       className="h-9 rounded-md border border-line px-4 text-sm hover:bg-sunken disabled:opacity-50"
                     >
-                      Apply
+                      {dict.people.apply}
                     </button>
                   </form>
 
@@ -106,30 +107,25 @@ export default async function PeoplePage() {
                       disabled={isMe}
                       className="h-9 rounded-md border border-line px-4 text-sm hover:bg-sunken disabled:opacity-50"
                     >
-                      {user.isActive ? "Deactivate" : "Reactivate"}
+                      {user.isActive ? dict.people.deactivate : dict.people.reactivate}
                     </button>
                   </form>
                 </div>
 
                 <div className="max-w-md">
-                  <PasswordForm action={setPassword} userId={user.id} />
+                  <PasswordForm action={setPassword} userId={user.id} dict={dict} />
                 </div>
 
                 {/* Brand grants */}
                 <div className="space-y-3 border-t border-line pt-5">
-                  <p className="eyebrow">Brand access</p>
+                  <p className="eyebrow">{dict.people.brandAccess}</p>
 
                   {superAdmin ? (
-                    <p className="text-sm text-muted">
-                      Super admins see every brand regardless of grants. Drop them to Staff to scope
-                      access.
-                    </p>
+                    <p className="text-sm text-muted">{dict.people.superAdminNote}</p>
                   ) : (
                     <>
                       {userGrants.length === 0 ? (
-                        <p className="text-sm text-muted">
-                          No brands yet — this account can sign in but will see nothing.
-                        </p>
+                        <p className="text-sm text-muted">{dict.people.noGrants}</p>
                       ) : (
                         <ul className="space-y-2">
                           {userGrants.map((grant) => (
@@ -151,7 +147,7 @@ export default async function PeoplePage() {
                                   type="submit"
                                   className="text-xs text-critical hover:underline"
                                 >
-                                  Revoke
+                                  {dict.people.revoke}
                                 </button>
                               </form>
                             </li>
@@ -162,7 +158,7 @@ export default async function PeoplePage() {
                       <form action={grantBrand} className="flex flex-wrap items-end gap-2">
                         <input type="hidden" name="userId" value={user.id} />
                         <div>
-                          <label className="eyebrow">Grant brand</label>
+                          <label className="eyebrow">{dict.people.grantBrand}</label>
                           <select
                             name="brandId"
                             className="mt-1.5 h-10 rounded-md border border-line bg-surface px-3 text-sm"
@@ -175,32 +171,29 @@ export default async function PeoplePage() {
                           </select>
                         </div>
                         <div>
-                          <label className="eyebrow">Role</label>
+                          <label className="eyebrow">{dict.campaign.status}</label>
                           <select
                             name="role"
                             defaultValue="VIEWER"
                             className="mt-1.5 h-10 rounded-md border border-line bg-surface px-3 text-sm"
                           >
-                            <option value="VIEWER">Viewer — read only</option>
-                            <option value="EDITOR">Editor — manage campaigns</option>
-                            <option value="BRAND_ADMIN">Brand admin</option>
+                            <option value="VIEWER">{dict.people.roleViewer}</option>
+                            <option value="EDITOR">{dict.people.roleEditor}</option>
+                            <option value="BRAND_ADMIN">{dict.people.roleBrandAdmin}</option>
                           </select>
                         </div>
                         <button
                           type="submit"
                           className="h-9 rounded-md border border-line px-4 text-sm hover:bg-sunken"
                         >
-                          Grant
+                          {dict.people.grant}
                         </button>
                       </form>
                     </>
                   )}
                 </div>
 
-                <p className="text-xs text-muted">
-                  Permission changes take up to five minutes to reach a signed-in user, or apply
-                  immediately after they sign out and back in.
-                </p>
+                <p className="text-xs text-muted">{dict.people.ttlNote}</p>
 
                 {!isMe && (
                   <div className="border-t border-line pt-4">
@@ -208,9 +201,10 @@ export default async function PeoplePage() {
                       action={deleteUser}
                       confirmValue={user.email}
                       hidden={{ userId: user.id }}
-                      triggerLabel="Delete permanently"
-                      title={`Permanently delete ${user.email}?`}
-                      consequence="Deactivating is usually better: it blocks sign-in but keeps their name on past actions in the activity log. After deletion, everything they ever did reads as an unknown actor. Campaigns and brands they own stay, with the owner field emptied."
+                      dict={dict}
+                      triggerLabel={dict.danger.deleteUser}
+                      title={t(dict.danger.deleteUserTitle, { name: user.email })}
+                      consequence={dict.danger.deleteUserWhat}
                     />
                   </div>
                 )}

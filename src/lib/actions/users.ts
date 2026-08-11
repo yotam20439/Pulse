@@ -6,6 +6,7 @@ import { hash } from "bcryptjs";
 
 import { db } from "@/db";
 import { auditLog, brandMembers, users, type BrandRole, type SystemRole } from "@/db/schema";
+import { getDictionary, t } from "@/lib/i18n";
 import { isSuperAdmin, requireUser } from "@/lib/rbac";
 
 /**
@@ -33,6 +34,7 @@ async function record(actorId: string, action: string, entityId: string, diff?: 
 export type ActionState = { error?: string; ok?: string };
 
 export async function createUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const actor = await requireAdmin();
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -40,11 +42,11 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
   const systemRole = String(formData.get("systemRole") ?? "STAFF") as SystemRole;
   const password = String(formData.get("password") ?? "");
 
-  if (!email.includes("@")) return { error: "Enter a valid email address." };
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (!email.includes("@")) return { error: d.errors.invalidEmail };
+  if (password.length < 8) return { error: d.errors.shortPassword };
 
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
-  if (existing) return { error: "An account with that email already exists." };
+  if (existing) return { error: d.errors.emailTaken };
 
   const [created] = await db
     .insert(users)
@@ -53,21 +55,22 @@ export async function createUser(_prev: ActionState, formData: FormData): Promis
 
   await record(actor.id, "user.create", created.id, { email, systemRole });
   revalidatePath("/settings/people");
-  return { ok: `Created ${email}.` };
+  return { ok: t(d.ok.created, { name: email }) };
 }
 
 export async function setPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const actor = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password.length < 8) return { error: d.errors.shortPassword };
 
   await db.update(users).set({ passwordHash: await hash(password, 10) }).where(eq(users.id, userId));
   // The hash is never logged — only that a reset happened.
   await record(actor.id, "user.password_reset", userId);
   revalidatePath("/settings/people");
-  return { ok: "Password updated." };
+  return { ok: d.ok.passwordUpdated };
 }
 
 export async function setActive(formData: FormData) {
@@ -140,18 +143,19 @@ export async function revokeBrand(formData: FormData) {
  * login, their brand grants, and their name against past actions.
  */
 export async function deleteUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const actor = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
 
   if (userId === actor.id) {
-    return { error: "You can't delete your own account." };
+    return { error: d.errors.cantDeleteSelf };
   }
 
   const [target] = await db.select().from(users).where(eq(users.id, userId));
-  if (!target) return { error: "User not found." };
+  if (!target) return { error: d.errors.notFound };
 
   if (String(formData.get("confirm") ?? "").trim().toLowerCase() !== target.email.toLowerCase()) {
-    return { error: `Type the email exactly to confirm: ${target.email}` };
+    return { error: t(d.errors.typeEmailToConfirm, { email: target.email }) };
   }
 
   // Never leave a system with no way in.
@@ -162,7 +166,7 @@ export async function deleteUser(_prev: ActionState, formData: FormData): Promis
       .where(and(eq(users.systemRole, "SUPER_ADMIN"), eq(users.isActive, true)));
 
     if (remaining.filter((u) => u.id !== userId).length === 0) {
-      return { error: "That's the last active super admin. Promote someone else first." };
+      return { error: d.errors.lastSuperAdmin };
     }
   }
 
@@ -177,5 +181,5 @@ export async function deleteUser(_prev: ActionState, formData: FormData): Promis
   });
 
   revalidatePath("/settings/people");
-  return { ok: `Deleted ${target.email}.` };
+  return { ok: t(d.ok.deleted, { name: target.email }) };
 }

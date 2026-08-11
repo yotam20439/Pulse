@@ -7,6 +7,7 @@ import { PostForm } from "@/components/forms/entity-forms";
 import { db } from "@/db";
 import { campaignInfluencers, influencerAccounts, influencers } from "@/db/schema";
 import { addPost } from "@/lib/actions/entities";
+import { getDictionary } from "@/lib/i18n";
 import { getCampaign } from "@/lib/queries/campaign";
 import { requireBrandAccess } from "@/lib/rbac";
 
@@ -22,6 +23,7 @@ export default async function NewPostPage({
   if (!campaign) notFound();
 
   await requireBrandAccess(campaign.brandId, "EDITOR");
+  const dict = await getDictionary();
 
   const roster = await db
     .select({
@@ -46,15 +48,14 @@ export default async function NewPostPage({
       </Link>
 
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Track a post</h1>
-        <p className="mt-1 text-sm text-muted">
-          Metrics are collected on the next run, then refreshed on a schedule.
-        </p>
+        <h1 className="text-2xl font-semibold">{dict.campaign.trackPost}</h1>
+        <p className="mt-1 text-sm text-muted">{dict.campaign.trackPostHint}</p>
       </header>
 
       <PostForm
         action={addPost}
         campaignId={campaignId}
+        dict={dict}
         participants={roster.map((r) => ({
           id: r.id,
           label: `${r.name} — @${r.handle} (${r.platform.toLowerCase()})`,

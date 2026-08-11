@@ -22,10 +22,8 @@ export default async function NewCampaignPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">New campaign</h1>
-        <p className="mt-1 text-sm text-muted">
-          Creators and posts are added once the campaign exists.
-        </p>
+        <h1 className="text-2xl font-semibold">{dict.campaign.newCampaign}</h1>
+        <p className="mt-1 text-sm text-muted">{dict.campaign.createHint}</p>
       </header>
       <CampaignForm
         action={createCampaign}

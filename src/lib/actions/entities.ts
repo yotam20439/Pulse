@@ -16,6 +16,7 @@ import {
   posts,
   type BrandRole,
 } from "@/db/schema";
+import { getDictionary, t } from "@/lib/i18n";
 import { isSuperAdmin, requireBrandAccess, requireUser } from "@/lib/rbac";
 
 export type ActionState = { error?: string; ok?: string };
@@ -37,15 +38,16 @@ async function record(
 /* ------------------------------- brands ---------------------------------- */
 
 export async function createBrand(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const user = await requireUser();
-  if (!isSuperAdmin(user)) return { error: "Only administrators can create brands." };
+  if (!isSuperAdmin(user)) return { error: d.errors.notAuthorised };
 
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "Give the brand a name." };
+  if (!name) return { error: d.errors.brandName };
 
   const slug = slugify(String(formData.get("slug") ?? "") || name);
   const [clash] = await db.select({ id: brands.id }).from(brands).where(eq(brands.slug, slug));
-  if (clash) return { error: `The slug "${slug}" is already taken.` };
+  if (clash) return { error: t(d.errors.slugTaken, { slug }) };
 
   const baseline = Number(formData.get("baseline") ?? 0);
 
@@ -67,10 +69,11 @@ export async function createBrand(_prev: ActionState, formData: FormData): Promi
 
   await record(user.id, brand.id, "brand.create", "brand", brand.id, { name, slug });
   revalidatePath("/settings/brands");
-  return { ok: `Created ${name}.` };
+  return { ok: t(d.ok.created, { name }) };
 }
 
 export async function updateBrand(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const user = await requireUser();
   const brandId = String(formData.get("brandId") ?? "");
   if (!isSuperAdmin(user)) await requireBrandAccess(brandId, "BRAND_ADMIN");
@@ -92,25 +95,26 @@ export async function updateBrand(_prev: ActionState, formData: FormData): Promi
   await record(user.id, brandId, "brand.update", "brand", brandId);
   revalidatePath(`/brands/${brandId}`);
   revalidatePath("/settings/brands");
-  return { ok: "Saved." };
+  return { ok: d.ok.saved };
 }
 
 /* ------------------------------ campaigns -------------------------------- */
 
 export async function createCampaign(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const brandId = String(formData.get("brandId") ?? "");
-  if (!brandId) return { error: "Choose a brand." };
+  if (!brandId) return { error: d.errors.chooseBrand };
 
   // Authorisation is on the brand the campaign belongs to, not on the form.
   const { user } = await requireBrandAccess(brandId, "EDITOR");
 
   const name = String(formData.get("name") ?? "").trim();
   const startDate = String(formData.get("startDate") ?? "");
-  if (!name) return { error: "Give the campaign a name." };
-  if (!startDate) return { error: "Set a start date." };
+  if (!name) return { error: d.errors.campaignName };
+  if (!startDate) return { error: d.errors.startDate };
 
   const endDate = String(formData.get("endDate") ?? "") || null;
-  if (endDate && endDate < startDate) return { error: "The end date is before the start date." };
+  if (endDate && endDate < startDate) return { error: d.errors.endBeforeStart };
 
   const budget = Number(formData.get("budget") ?? 0);
 
@@ -161,12 +165,13 @@ export async function createCampaign(_prev: ActionState, formData: FormData): Pr
 }
 
 export async function updateCampaign(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const campaignId = String(formData.get("campaignId") ?? "");
   const [existing] = await db
     .select({ brandId: campaigns.brandId })
     .from(campaigns)
     .where(eq(campaigns.id, campaignId));
-  if (!existing) return { error: "Campaign not found." };
+  if (!existing) return { error: d.errors.notFound };
 
   const { user } = await requireBrandAccess(existing.brandId, "EDITOR");
 
@@ -189,7 +194,7 @@ export async function updateCampaign(_prev: ActionState, formData: FormData): Pr
 
   await record(user.id, existing.brandId, "campaign.update", "campaign", campaignId);
   revalidatePath(`/campaigns/${campaignId}`);
-  return { ok: "Saved." };
+  return { ok: d.ok.saved };
 }
 
 export async function setKpi(formData: FormData) {
@@ -289,12 +294,13 @@ const PLATFORM_FROM_URL: [RegExp, string][] = [
 ];
 
 export async function addPost(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const campaignId = String(formData.get("campaignId") ?? "");
   const participantId = String(formData.get("participantId") ?? "");
   const url = String(formData.get("url") ?? "").trim();
 
-  if (!participantId) return { error: "Choose which creator published this." };
-  if (!/^https?:\/\//i.test(url)) return { error: "Paste the full post URL, including https://" };
+  if (!participantId) return { error: d.errors.chooseCreator };
+  if (!/^https?:\/\//i.test(url)) return { error: d.errors.fullUrl };
 
   const [participant] = await db
     .select({ brandId: campaigns.brandId, accountId: campaignInfluencers.accountId })
@@ -303,12 +309,12 @@ export async function addPost(_prev: ActionState, formData: FormData): Promise<A
     .where(
       and(eq(campaignInfluencers.id, participantId), eq(campaignInfluencers.campaignId, campaignId)),
     );
-  if (!participant) return { error: "That creator isn't on this campaign." };
+  if (!participant) return { error: d.errors.notOnCampaign };
 
   const { user } = await requireBrandAccess(participant.brandId, "EDITOR");
 
   const [clash] = await db.select({ id: posts.id }).from(posts).where(eq(posts.url, url));
-  if (clash) return { error: "That URL is already being tracked." };
+  if (clash) return { error: d.errors.urlExists };
 
   const platform =
     (formData.get("platform") as string) ||
@@ -333,7 +339,7 @@ export async function addPost(_prev: ActionState, formData: FormData): Promise<A
 
   await record(user.id, participant.brandId, "post.create", "post", post.id, { url, platform });
   revalidatePath(`/campaigns/${campaignId}`);
-  return { ok: "Tracking started. Metrics appear after the next collection run." };
+  return { ok: d.ok.trackingStarted };
 }
 
 export async function setPostTracking(formData: FormData) {
@@ -358,10 +364,11 @@ export async function createInfluencer(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const d = await getDictionary();
   const user = await requireUser();
   // The roster is shared across brands, so any user with a brand may add to it.
   if (Object.keys(user.brands).length === 0 && !isSuperAdmin(user)) {
-    return { error: "You need access to at least one brand." };
+    return { error: d.errors.needBrand };
   }
 
   const displayName = String(formData.get("displayName") ?? "").trim();
@@ -432,6 +439,7 @@ export async function setBrandActive(formData: FormData) {
 }
 
 export async function deleteBrand(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const user = await requireUser();
   if (!isSuperAdmin(user)) return { error: "Only administrators can delete brands." };
 
@@ -439,12 +447,12 @@ export async function deleteBrand(_prev: ActionState, formData: FormData): Promi
   const confirmation = String(formData.get("confirm") ?? "").trim();
 
   const [brand] = await db.select().from(brands).where(eq(brands.id, brandId));
-  if (!brand) return { error: "Brand not found." };
+  if (!brand) return { error: d.errors.notFound };
 
   // Typing the name is friction on purpose: this cascades through campaigns,
   // posts, and every metric snapshot ever collected for them.
   if (confirmation !== brand.name) {
-    return { error: `Type the brand name exactly to confirm: ${brand.name}` };
+    return { error: t(d.errors.typeNameToConfirm, { name: brand.name }) };
   }
 
   const [{ count }] = await db
@@ -453,27 +461,26 @@ export async function deleteBrand(_prev: ActionState, formData: FormData): Promi
     .where(eq(campaigns.brandId, brandId));
 
   if (count > 0) {
-    return {
-      error: `${brand.name} has ${count} campaigns and their metric history. Archive it instead — deletion would destroy the record permanently.`,
-    };
+    return { error: t(d.errors.brandHasCampaigns, { name: brand.name, count }) };
   }
 
   await db.delete(brands).where(eq(brands.id, brandId));
   await record(user.id, null, "brand.delete", "brand", brandId, { name: brand.name });
   revalidatePath("/settings/brands");
   revalidatePath("/", "layout");
-  return { ok: `Deleted ${brand.name}.` };
+  return { ok: t(d.ok.deleted, { name: brand.name }) };
 }
 
 export async function deleteCampaign(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const d = await getDictionary();
   const campaignId = String(formData.get("campaignId") ?? "");
   const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, campaignId));
-  if (!campaign) return { error: "Campaign not found." };
+  if (!campaign) return { error: d.errors.notFound };
 
   const { user } = await requireBrandAccess(campaign.brandId, "BRAND_ADMIN");
 
   if (String(formData.get("confirm") ?? "").trim() !== campaign.name) {
-    return { error: `Type the campaign name exactly to confirm: ${campaign.name}` };
+    return { error: t(d.errors.typeNameToConfirm, { name: campaign.name }) };
   }
 
   await db.delete(campaigns).where(eq(campaigns.id, campaignId));

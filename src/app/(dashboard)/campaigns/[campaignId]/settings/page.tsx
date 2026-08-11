@@ -24,6 +24,7 @@ import {
   updateCampaign,
 } from "@/lib/actions/entities";
 import { getDictionary } from "@/lib/i18n";
+import { t } from "@/lib/i18n/dictionaries";
 import { getCampaign } from "@/lib/queries/campaign";
 import { rankCreatorsForCampaign } from "@/lib/queries/creators";
 import { requireBrandAccess } from "@/lib/rbac";
@@ -91,7 +92,7 @@ export default async function CampaignSettingsPage({
       </Link>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">Campaign details</h2>
+        <h2 className="eyebrow">{dict.campaign.details}</h2>
         <CampaignForm
           action={updateCampaign}
           brands={[{ id: campaign.brandId, name: campaign.brandName }]}
@@ -114,11 +115,13 @@ export default async function CampaignSettingsPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">Roster ({roster.length})</h2>
+        <h2 className="eyebrow">
+          {dict.campaign.roster} ({roster.length})
+        </h2>
 
         {roster.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line-strong bg-surface p-6 text-sm text-muted">
-            No creators booked yet.
+            {dict.campaign.noCreators}
           </p>
         ) : (
           <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
@@ -139,10 +142,10 @@ export default async function CampaignSettingsPage({
                   <input type="hidden" name="participantId" value={r.id} />
                   <button
                     type="submit"
-                    title="Unbooks them from this campaign and removes their posts from its totals"
+                    title={dict.campaign.removeHint}
                     className="text-xs text-critical hover:underline"
                   >
-                    Remove
+                    {dict.campaign.remove}
                   </button>
                 </form>
               </li>
@@ -155,6 +158,7 @@ export default async function CampaignSettingsPage({
         <CreatorLinkAdd
           action={addCreatorByLink}
           campaignId={campaignId}
+          dict={dict}
           compact
           suggestions={ranked
             .filter((r) => !r.alreadyBooked)
@@ -172,7 +176,7 @@ export default async function CampaignSettingsPage({
         {ranked.filter((r) => !r.alreadyBooked).length > 0 && (
           <details className="card p-4">
             <summary className="cursor-pointer text-sm font-medium">
-              Why these creators — fit scores explained
+              {dict.creator.whyThese}
             </summary>
             <ul className="mt-4 space-y-2">
               {ranked
@@ -193,27 +197,20 @@ export default async function CampaignSettingsPage({
                     </span>
                     {r.workedWithBrand && (
                       <span className="rounded-full bg-brand/10 px-2 py-0.5 text-brand">
-                        worked with {campaign.brandName}
+                        {t(dict.creator.workedWith, { brand: campaign.brandName })}
                       </span>
                     )}
                   </li>
                 ))}
             </ul>
-            <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
-              Relevance blends platform overlap (30%), audience size against budget per slot (25%),
-              time-weighted past effectiveness with this brand counting double (25%), and tag
-              overlap (20%). It ranks suggestions — it never filters anyone out.
-            </p>
+            <p className="mt-4 border-t border-line pt-3 text-xs text-muted">{dict.creator.relevanceHint}</p>
           </details>
         )}
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">Targets</h2>
-        <p className="max-w-2xl text-sm text-muted">
-          Weight sets how much each target counts toward KPI attainment, which is 30% of the
-          Effectiveness Index. For cost metrics, coming in under target scores above par.
-        </p>
+        <h2 className="eyebrow">{dict.campaign.targets}</h2>
+        <p className="max-w-2xl text-sm text-muted">{dict.campaign.kpiHint}</p>
 
         {kpis.length > 0 && (
           <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
@@ -234,7 +231,7 @@ export default async function CampaignSettingsPage({
         >
           <input type="hidden" name="campaignId" value={campaignId} />
           <div className="min-w-44 flex-1">
-            <label className="eyebrow">Metric</label>
+            <label className="eyebrow">{dict.campaign.metric}</label>
             <select
               name="metric"
               className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
@@ -247,7 +244,7 @@ export default async function CampaignSettingsPage({
             </select>
           </div>
           <div className="w-36">
-            <label className="eyebrow">Target</label>
+            <label className="eyebrow">{dict.campaign.target}</label>
             <input
               name="targetValue"
               type="number"
@@ -258,7 +255,7 @@ export default async function CampaignSettingsPage({
             />
           </div>
           <div className="w-24">
-            <label className="eyebrow">Weight</label>
+            <label className="eyebrow">{dict.campaign.weight}</label>
             <input
               name="weight"
               type="number"
@@ -269,19 +266,20 @@ export default async function CampaignSettingsPage({
             />
           </div>
           <button type="submit" className="h-9 rounded-md bg-ink px-4 text-sm font-medium text-white">
-            Set target
+            {dict.campaign.setTarget}
           </button>
         </form>
       </section>
       <section className="space-y-3 border-t border-line pt-8">
-        <h2 className="eyebrow">Danger zone</h2>
+        <h2 className="eyebrow">{dict.danger.zone}</h2>
         <ConfirmDelete
           action={deleteCampaign}
           confirmValue={campaign.name}
           hidden={{ campaignId }}
-          triggerLabel="Delete this campaign"
-          title={`Delete ${campaign.name}?`}
-          consequence="Removes the campaign, its roster, every tracked post, and all metric history. Set the status to Archived instead if you only want it out of the way."
+          dict={dict}
+          triggerLabel={dict.danger.deleteCampaign}
+          title={t(dict.danger.deleteCampaignTitle, { name: campaign.name })}
+          consequence={dict.danger.deleteCampaignWhat}
         />
       </section>
 

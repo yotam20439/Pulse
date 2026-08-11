@@ -14,6 +14,7 @@ import {
   influencers,
   posts,
 } from "@/db/schema";
+import { getDictionary, t } from "@/lib/i18n";
 import { isSuperAdmin, requireBrandAccess, requireUser } from "@/lib/rbac";
 import { parseMany, parseSocialLink, suggestName } from "@/lib/social-links";
 
@@ -46,14 +47,12 @@ export async function addCreatorByLink(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const d = await getDictionary();
   const user = await assertCanEditRoster();
 
   const links = parseMany(String(formData.get("links") ?? ""));
   if (links.length === 0) {
-    return {
-      error:
-        "No usable link found. Paste a profile or post URL from Instagram, TikTok, YouTube, Facebook, X, LinkedIn, or Telegram.",
-    };
+    return { error: d.errors.noUsableLink };
   }
 
   const providedName = String(formData.get("displayName") ?? "").trim();
@@ -225,18 +224,19 @@ export async function addCreatorByLink(
   const skipped = links.length - attached;
 
   if (attached === 0) {
-    return { ok: "Those accounts were already in the roster.", createdId: influencerId };
+    return { ok: d.ok.alreadyInRoster, createdId: influencerId };
   }
 
   const parts = [
-    `${created ? "Added" : "Updated"} creator with ${attached} account${attached === 1 ? "" : "s"}`,
+    t(d.ok.creatorAdded, {
+      verb: created ? d.ok.verbAdded : d.ok.verbUpdated,
+      n: attached,
+    }),
   ];
-  if (skipped > 0) parts.push(`${skipped} already known`);
-  if (fetched.length > 0) parts.push(`stats pulled for ${fetched.join(", ")}`);
+  if (skipped > 0) parts.push(t(d.ok.alreadyKnown, { n: skipped }));
+  if (fetched.length > 0) parts.push(t(d.ok.statsPulled, { handles: fetched.join(", ") }));
   if (unfetched.length > 0) {
-    parts.push(
-      `no provider for ${[...new Set(unfetched)].join(", ")} — enter those by hand`,
-    );
+    parts.push(t(d.ok.noProviderFor, { platforms: [...new Set(unfetched)].join(", ") }));
   }
 
   return { ok: `${parts.join(" · ")}.`, createdId: influencerId };
@@ -247,11 +247,12 @@ export async function addAccountToCreator(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const d = await getDictionary();
   await assertCanEditRoster();
 
   const influencerId = String(formData.get("influencerId") ?? "");
   const link = parseSocialLink(String(formData.get("url") ?? ""));
-  if (!link) return { error: "That link wasn't recognised as a social profile." };
+  if (!link) return { error: d.errors.linkNotRecognised };
 
   const [clash] = await db
     .select({ id: influencerAccounts.id })
@@ -259,7 +260,7 @@ export async function addAccountToCreator(
     .where(
       and(eq(influencerAccounts.platform, link.platform), eq(influencerAccounts.handle, link.handle)),
     );
-  if (clash) return { error: `@${link.handle} on ${link.platform.toLowerCase()} is already in the roster.` };
+  if (clash) return { error: t(d.errors.handleExists, { handle: link.handle, platform: link.platform.toLowerCase() }) };
 
   const [inserted] = await db
     .insert(influencerAccounts)
@@ -280,8 +281,14 @@ export async function addAccountToCreator(
   return {
     ok:
       outcome.status === "updated"
-        ? `Added @${link.handle} and pulled their stats from ${link.platform.toLowerCase()}.`
-        : `Added @${link.handle}. ${outcome.reason ?? "Stats need entering by hand."}`,
+        ? t(d.ok.accountAdded, {
+            handle: `@${link.handle}`,
+            platform: link.platform.toLowerCase(),
+          })
+        : t(d.ok.accountAddedNoStats, {
+            handle: `@${link.handle}`,
+            reason: outcome.reason ?? "",
+          }),
   };
 }
 
@@ -293,6 +300,7 @@ export async function updateAccountStats(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const d = await getDictionary();
   await assertCanEditRoster();
 
   const accountId = String(formData.get("accountId") ?? "");
@@ -300,7 +308,7 @@ export async function updateAccountStats(
     .select()
     .from(influencerAccounts)
     .where(eq(influencerAccounts.id, accountId));
-  if (!account) return { error: "Account not found." };
+  if (!account) return { error: d.errors.accountNotFound };
 
   const number = (key: string) => {
     const value = Number(formData.get(key) ?? 0);
@@ -332,7 +340,7 @@ export async function updateAccountStats(
   });
 
   revalidatePath(`/influencers/${account.influencerId}`);
-  return { ok: "Stats updated." };
+  return { ok: d.ok.statsUpdated };
 }
 
 export async function removeAccount(formData: FormData) {
@@ -360,6 +368,7 @@ export async function refreshAccountStats(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const d = await getDictionary();
   await assertCanEditRoster();
 
   const accountId = String(formData.get("accountId") ?? "");
@@ -375,12 +384,14 @@ export async function refreshAccountStats(
     return {
       ok:
         delta != null && delta !== 0
-          ? `Updated from the platform. Followers ${delta > 0 ? "+" : ""}${delta.toLocaleString()} since last check.`
-          : "Updated from the platform.",
+          ? t(d.ok.refreshedDelta, {
+              delta: `${delta > 0 ? "+" : ""}${delta.toLocaleString()}`,
+            })
+          : d.ok.refreshed,
     };
   }
 
-  return { error: outcome.reason ?? "Could not refresh." };
+  return { error: outcome.reason ?? d.errors.couldNotRefresh };
 }
 
 /**
@@ -397,14 +408,15 @@ export async function deleteCreator(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const d = await getDictionary();
   const user = await assertCanEditRoster();
   const influencerId = String(formData.get("influencerId") ?? "");
 
   const [creator] = await db.select().from(influencers).where(eq(influencers.id, influencerId));
-  if (!creator) return { error: "Creator not found." };
+  if (!creator) return { error: d.errors.notFound };
 
   if (String(formData.get("confirm") ?? "").trim() !== creator.displayName) {
-    return { error: `Type the creator's name exactly to confirm: ${creator.displayName}` };
+    return { error: t(d.errors.typeNameToConfirm, { name: creator.displayName }) };
   }
 
   const [{ postCount }] = await db
@@ -420,7 +432,11 @@ export async function deleteCreator(
       .where(eq(campaignInfluencers.influencerId, influencerId));
 
     return {
-      error: `${creator.displayName} has ${postCount} tracked posts across ${campaignCount} campaign${campaignCount === 1 ? "" : "s"}. Deleting would change the totals on campaigns that already ran. Remove them from those campaigns first if you really want this.`,
+      error: t(d.errors.creatorHasPosts, {
+        name: creator.displayName,
+        posts: postCount,
+        campaigns: campaignCount,
+      }),
     };
   }
 

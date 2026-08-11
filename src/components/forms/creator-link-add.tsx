@@ -6,6 +6,7 @@ import { Check, Link2, X } from "lucide-react";
 import { PlatformBadge } from "@/components/platform-badge";
 import { Field, FormMessage, Input, SubmitButton } from "@/components/ui/form";
 import type { ActionState } from "@/lib/actions/creators";
+import { type Dictionary } from "@/lib/i18n/dictionaries";
 import { parseMany, suggestName } from "@/lib/social-links";
 import { cn } from "@/lib/utils";
 
@@ -27,8 +28,10 @@ export function CreatorLinkAdd({
   campaignId,
   suggestions = [],
   compact = false,
+  dict,
 }: {
   action: Action;
+  dict: Dictionary;
   /** When present, the creator is booked onto this campaign in the same step. */
   campaignId?: string;
   suggestions?: {
@@ -57,8 +60,8 @@ export function CreatorLinkAdd({
       {campaignId && <input type="hidden" name="campaignId" value={campaignId} />}
 
       <Field
-        label="Paste profile or post links"
-        hint="Instagram and YouTube pull followers, average likes and engagement rate automatically. Other platforms are added without stats. Several links at once is fine — they group under one creator."
+        label={dict.creator.pasteLinks}
+        hint={dict.creator.pasteHint}
       >
         <textarea
           name="links"
@@ -77,7 +80,7 @@ export function CreatorLinkAdd({
           {parsed.length === 0 ? (
             <p className="flex items-center gap-2 text-xs text-warning">
               <X className="size-3.5" aria-hidden />
-              Nothing recognised yet — keep typing, or check the link is a social profile.
+              {dict.creator.nothingParsed}
             </p>
           ) : (
             parsed.map((link) => (
@@ -89,7 +92,7 @@ export function CreatorLinkAdd({
                 <PlatformBadge platform={link.platform} />
                 <span className="tnum">@{link.handle}</span>
                 {link.wasPostLink && (
-                  <span className="text-muted">· resolved from a post link</span>
+                  <span className="text-muted">· {dict.creator.fromPostLink}</span>
                 )}
               </p>
             ))
@@ -98,7 +101,7 @@ export function CreatorLinkAdd({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Creator name">
+        <Field label={dict.creator.creatorName}>
           <Input
             name="displayName"
             required
@@ -107,20 +110,20 @@ export function CreatorLinkAdd({
               setTouchedName(true);
               setName(e.target.value);
             }}
-            placeholder="Taken from the handle"
+            placeholder={dict.creator.nameFromHandle}
           />
         </Field>
 
-        <Field label="Tags" hint="Comma separated — used for campaign fit.">
+        <Field label={dict.creator.tags} hint={dict.creator.tagsHint}>
           <Input name="tags" placeholder="food, family, fitness" />
         </Field>
 
         {parsed.length === 1 && (
           <>
-            <Field label="Followers" hint="Optional — leave blank if unknown.">
+            <Field label={dict.creator.followersLabel} hint={dict.creator.followersHint}>
               <Input name="followerCount" type="number" min={0} />
             </Field>
-            <Field label="Engagement rate" hint="0.045 = 4.5%">
+            <Field label={dict.creator.erLabel} hint={dict.creator.erHint}>
               <Input name="baselineEngagementRate" type="number" step="0.001" min="0" max="1" />
             </Field>
           </>
@@ -128,10 +131,10 @@ export function CreatorLinkAdd({
 
         {campaignId && (
           <>
-            <Field label="Fee">
+            <Field label={dict.campaign.fee}>
               <Input name="fee" type="number" min={0} defaultValue={0} />
             </Field>
-            <Field label="Posts planned">
+            <Field label={dict.campaign.postsPlanned}>
               <Input name="deliverablesPlanned" type="number" min={1} defaultValue={1} />
             </Field>
           </>
@@ -140,20 +143,19 @@ export function CreatorLinkAdd({
 
       <FormMessage error={state.error} ok={state.ok} />
 
-      <SubmitButton>
-        {campaignId ? "Add and book on this campaign" : "Add creator and fetch stats"}
+      <SubmitButton pendingLabel={dict.common.working}>
+        {campaignId ? dict.creator.addAndBook : dict.creator.addCreator}
       </SubmitButton>
 
       <p className="text-xs text-muted">
-        Fetching runs on submit and takes a few seconds per account.
+        {dict.creator.fetchNote}
       </p>
 
       {suggestions.length > 0 && (
         <div className="space-y-2 border-t border-line pt-4">
-          <p className="eyebrow">Worked with before</p>
+          <p className="eyebrow">{dict.creator.workedBefore}</p>
           <p className="text-xs text-muted">
-            Suggestions only — ranked by fit with this campaign. Adding anyone new above always
-            works.
+            {dict.creator.suggestionsHint}
           </p>
           <ul className="flex flex-wrap gap-2 pt-1">
             {suggestions.map((s) => (
