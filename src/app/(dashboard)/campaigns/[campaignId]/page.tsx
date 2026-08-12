@@ -83,7 +83,7 @@ export default async function CampaignPage({
   const totalMixReach = mix.reduce((s, m) => s + m.reach, 0) || 1;
 
   return (
-    <div style={{ "--brand": campaign.brandAccent } as React.CSSProperties} className="space-y-8">
+    <div className="space-y-8">
       <header className="space-y-4">
         <Link
           href={`/brands/${campaign.brandId}`}

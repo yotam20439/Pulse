@@ -151,7 +151,7 @@ export const brands = pgTable("brands", {
   slug: text("slug").notNull(),
   logoUrl: text("logo_url"),
   /** Hex accent used to tint the brand's dashboard. */
-  accentColor: text("accent_color").notNull().default("#6D4AFF"),
+  accentColor: text("accent_color").notNull().default("#6D28D9"),
   industry: text("industry"),
   /** Person accountable for this brand. Shown everywhere the brand appears. */
   ownerId: uuid("owner_id"),

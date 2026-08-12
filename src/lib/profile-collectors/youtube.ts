@@ -46,7 +46,7 @@ export const youtubeProfileCollector: ProfileCollector = {
     try {
       // Handles (@name) and legacy channel ids (UC…) resolve differently.
       const clean = handle.replace(/^@/, "");
-      const lookup: Record<string, string> = handle.startsWith("UC")
+      const lookup = handle.startsWith("UC")
         ? { id: handle }
         : { forHandle: `@${clean}` };
 

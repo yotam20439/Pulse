@@ -57,7 +57,7 @@ export async function createBrand(_prev: ActionState, formData: FormData): Promi
       name,
       slug,
       industry: String(formData.get("industry") ?? "").trim() || null,
-      accentColor: String(formData.get("accentColor") ?? "#6D4AFF"),
+      accentColor: String(formData.get("accentColor") ?? "#6D28D9"),
       logoUrl: String(formData.get("logoUrl") ?? "").trim() || null,
       ownerId: String(formData.get("ownerId") ?? "") || null,
       notes: String(formData.get("notes") ?? "").trim() || null,
@@ -84,7 +84,7 @@ export async function updateBrand(_prev: ActionState, formData: FormData): Promi
     .set({
       name: String(formData.get("name") ?? "").trim(),
       industry: String(formData.get("industry") ?? "").trim() || null,
-      accentColor: String(formData.get("accentColor") ?? "#6D4AFF"),
+      accentColor: String(formData.get("accentColor") ?? "#6D28D9"),
       logoUrl: String(formData.get("logoUrl") ?? "").trim() || null,
       ownerId: String(formData.get("ownerId") ?? "") || null,
       notes: String(formData.get("notes") ?? "").trim() || null,

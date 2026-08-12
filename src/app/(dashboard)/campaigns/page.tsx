@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { desc, eq, inArray } from "drizzle-orm";
 
+import { BrandMark } from "@/components/brand-mark";
 import { StatusPill } from "@/components/status-pill";
 import { OwnerBadge } from "@/components/owner-badge";
 import { db } from "@/db";
@@ -112,10 +113,11 @@ export default async function CampaignsPage() {
                         </td>
                         <td className="px-4 py-3 text-ink-soft">
                           <span className="inline-flex items-center gap-2">
-                            <span
-                              aria-hidden
-                              className="size-2 rounded-full"
-                              style={{ background: row.accent }}
+                            <BrandMark
+                              name={row.brandName}
+                              logoUrl={row.logoUrl}
+                              accentColor={row.accent}
+                              size="xs"
                             />
                             {row.brandName}
                           </span>

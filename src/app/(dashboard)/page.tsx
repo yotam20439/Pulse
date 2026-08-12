@@ -1,6 +1,7 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 
+import { BrandMark } from "@/components/brand-mark";
 import { StatusPill } from "@/components/status-pill";
 import { db } from "@/db";
 import { brands, campaigns } from "@/db/schema";
@@ -25,6 +26,7 @@ export default async function OverviewPage() {
             currency: campaigns.currency,
             brandName: brands.name,
             accent: brands.accentColor,
+            logoUrl: brands.logoUrl,
           })
           .from(campaigns)
           .innerJoin(brands, eq(campaigns.brandId, brands.id))
@@ -77,10 +79,11 @@ export default async function OverviewPage() {
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   <span className="inline-flex items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="size-2 rounded-full"
-                      style={{ background: r.accent }}
+                    <BrandMark
+                      name={r.brandName}
+                      logoUrl={r.logoUrl}
+                      accentColor={r.accent}
+                      size="xs"
                     />
                     {r.brandName}
                   </span>

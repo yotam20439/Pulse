@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity, BarChart3, Settings, Users } from "lucide-react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n";
 import type { SessionUser } from "@/lib/rbac";
@@ -104,13 +105,15 @@ export function Sidebar({
                 className={itemClass(active)}
               >
                 <Spine active={active} />
-                {/* The brand's own colour, at full saturation against the
-                    violet field — the only place each client is identifiable
-                    without reading. */}
-                <span
-                  aria-hidden
-                  className="size-2 shrink-0 rounded-full transition-transform group-hover:scale-125"
-                  style={{ background: brand.accentColor }}
+                {/* Logo where one exists, monogram where it doesn't. Brands
+                    are identified by their mark rather than by recolouring the
+                    interface, so the palette stays constant everywhere. */}
+                <BrandMark
+                  name={brand.name}
+                  logoUrl={brand.logoUrl}
+                  accentColor={brand.accentColor}
+                  size="xs"
+                  className="shrink-0"
                 />
                 <span className="truncate">{brand.name}</span>
                 {brand.role !== "VIEWER" && (

@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { Field, FormMessage, Input, Select, SubmitButton, Textarea } from "@/components/ui/form";
-import { BrandMark } from "@/components/brand-mark";
+import { LogoUpload } from "@/components/forms/logo-upload";
 import { t } from "@/lib/i18n/dictionaries";
 import type { Dictionary } from "@/lib/i18n";
 import type { ActionState } from "@/lib/actions/entities";
@@ -100,26 +100,13 @@ export function BrandForm({
   };
 }) {
   const [state, formAction] = useActionState(action, {});
-  const [logo, setLogo] = useState(brand?.logoUrl ?? "");
-  const [colour, setColour] = useState(brand?.accentColor ?? "#6D4AFF");
+  const [colour, setColour] = useState(brand?.accentColor ?? "#6D28D9");
   const [name, setName] = useState(brand?.name ?? "");
 
   return (
     <div className="space-y-4">
       <form action={formAction} className="card space-y-5 p-5">
         {brand && <input type="hidden" name="brandId" value={brand.id} />}
-
-        {/* Live preview: the mark is what appears in the sidebar and every
-            list, so showing it while editing beats saving to find out. */}
-        <div className="flex items-center gap-3 border-b border-line pb-4">
-          <BrandMark name={name || "??"} logoUrl={logo || null} accentColor={colour} size="lg" />
-          <div className="min-w-0">
-            <p className="truncate font-medium">{name || "—"}</p>
-            <p className="text-xs text-muted">
-              {logo ? dict.brand.logoPreview : dict.brand.monogramFallback}
-            </p>
-          </div>
-        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={dict.brand.name}>
@@ -134,15 +121,16 @@ export function BrandForm({
             <Input name="industry" defaultValue={brand?.industry ?? ""} />
           </Field>
 
-          <Field label={dict.brand.logo} hint={dict.brand.logoHint} className="sm:col-span-2">
-            <Input
-              name="logoUrl"
-              type="url"
-              value={logo}
-              onChange={(e) => setLogo(e.target.value)}
-              placeholder="https://…/logo.png"
+          <div className="sm:col-span-2">
+            <LogoUpload
+              brandId={brand?.id}
+              brandName={name || "??"}
+              initialUrl={brand?.logoUrl}
+              accentColor={colour}
+              label={dict.brand.logo}
+              hint={dict.brand.logoHint}
             />
-          </Field>
+          </div>
 
           <Field label={dict.brand.owner}>
             <Select name="ownerId" defaultValue={brand?.ownerId ?? ""}>
@@ -155,7 +143,7 @@ export function BrandForm({
             </Select>
           </Field>
 
-          <Field label={dict.brand.accent}>
+          <Field label={dict.brand.accent} hint={dict.brand.accentHint}>
             <Input
               name="accentColor"
               type="color"

@@ -56,7 +56,7 @@ export default async function BrandPage({ params }: { params: Promise<{ brandId:
   return (
     // Re-binding --brand here is what tints the accent rail, the active nav
     // item, and every primary chart series on this page.
-    <div style={{ "--brand": brand.accentColor } as React.CSSProperties} className="space-y-8">
+    <div className="space-y-8">
       <header className="flex items-start justify-between gap-6">
         <div className="flex items-start gap-4">
           <BrandMark

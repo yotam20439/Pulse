@@ -1,13 +1,27 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Brand logo where one exists, and a coloured monogram where it doesn't.
+ * A brand's logo, or a monogram when it has none.
  *
- * The fallback is not a placeholder image: it uses the brand's own accent
- * colour, so a brand without a logo still reads as itself in a list. A plain
- * <img> rather than next/image because these are arbitrary third-party URLs
- * that would each need whitelisting in next.config.
+ * This is now the *only* way a brand is identified visually — the interface
+ * itself no longer recolours per brand, which keeps the palette consistent and
+ * means a client's colour can't accidentally collide with a status colour or
+ * fail contrast against the surface it lands on.
+ *
+ * The monogram still uses the stored accent so brands without a logo remain
+ * distinguishable in a list. That colour is contained to this 24–48px square,
+ * where contrast rules are easy to satisfy.
+ *
+ * A plain <img> rather than next/image: these are arbitrary uploaded or pasted
+ * URLs, and each new host would otherwise need whitelisting in next.config.
  */
+const SIZES = {
+  xs: "size-5 text-[9px] rounded",
+  sm: "size-6 text-[10px] rounded",
+  md: "size-9 text-sm rounded-md",
+  lg: "size-12 text-base rounded-lg",
+} as const;
+
 export function BrandMark({
   name,
   logoUrl,
@@ -18,18 +32,20 @@ export function BrandMark({
   name: string;
   logoUrl?: string | null;
   accentColor: string;
-  size?: "sm" | "md" | "lg";
+  size?: keyof typeof SIZES;
   className?: string;
 }) {
-  const dimension = size === "sm" ? "size-6" : size === "md" ? "size-9" : "size-12";
-
   if (logoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={logoUrl}
         alt=""
-        className={cn(dimension, "shrink-0 rounded-md border border-line object-contain bg-surface", className)}
+        className={cn(
+          SIZES[size],
+          "shrink-0 border border-line bg-surface object-contain",
+          className,
+        )}
       />
     );
   }
@@ -38,9 +54,8 @@ export function BrandMark({
     <span
       aria-hidden
       className={cn(
-        dimension,
-        "inline-flex shrink-0 items-center justify-center rounded-md font-semibold text-white",
-        size === "sm" ? "text-[10px]" : size === "md" ? "text-sm" : "text-base",
+        SIZES[size],
+        "inline-flex shrink-0 items-center justify-center font-bold text-white",
         className,
       )}
       style={{ background: accentColor }}

@@ -79,10 +79,7 @@ export default async function CampaignSettingsPage({
 
 
   return (
-    <div
-      style={{ "--brand": campaign.brandAccent } as React.CSSProperties}
-      className="max-w-4xl space-y-8"
-    >
+    <div className="max-w-4xl space-y-8">
       <Link
         href={`/campaigns/${campaignId}`}
         className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"

@@ -25,8 +25,8 @@ export const en = {
 
   brand: {
     owner: "Person in charge",
-    logo: "Logo URL",
-    logoHint: "Square image works best. Leave blank for a coloured monogram.",
+    logo: "Logo",
+    logoHint: "PNG, JPEG, WebP, or SVG up to 2MB. Square works best. Without one, the brand shows a coloured monogram.",
     notes: "Notes",
     archive: "Archive",
     unarchive: "Restore",
@@ -43,7 +43,8 @@ export const en = {
     industry: "Industry",
     slug: "Slug",
     slugHint: "Left blank, it's derived from the name.",
-    accent: "Accent colour",
+    accent: "Monogram colour",
+    accentHint: "Used only for the monogram when there is no logo.",
     baseline: "Baseline monthly impressions",
     baselineHint: "The Prominence Index scores campaigns against this.",
     save: "Save brand",
@@ -413,8 +414,8 @@ export const he: Dictionary = {
 
   brand: {
     owner: "אחראי",
-    logo: "כתובת לוגו",
-    logoHint: "תמונה מרובעת עדיפה. השאירו ריק למונוגרמה צבעונית.",
+    logo: "לוגו",
+    logoHint: "PNG, JPEG, WebP או SVG עד 2MB. תמונה מרובעת עדיפה. ללא לוגו יוצג מונוגרמה צבעונית.",
     notes: "הערות",
     archive: "העברה לארכיון",
     unarchive: "שחזור",
@@ -431,7 +432,8 @@ export const he: Dictionary = {
     industry: "תחום",
     slug: "מזהה כתובת",
     slugHint: "אם יישאר ריק, ייגזר מהשם.",
-    accent: "צבע מזהה",
+    accent: "צבע המונוגרמה",
+    accentHint: "משמש רק למונוגרמה כשאין לוגו.",
     baseline: "בסיס הופעות חודשי",
     baselineHint: "מדד הבולטות מנקד קמפיינים ביחס לערך הזה.",
     save: "שמירת מותג",

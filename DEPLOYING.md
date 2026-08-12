@@ -134,3 +134,21 @@ The strongest data in the system isn't fetched from a profile at all: it's compu
 ### Scheduling
 
 `/api/cron/profiles` refreshes accounts not synced in 24 hours, 100 at a time. Add it under Settings → Cron Jobs once deployed, or drive it from GitHub Actions with the `CRON_SECRET` bearer token.
+
+
+## Brand logo uploads
+
+Logos upload to Vercel Blob. Two steps, once:
+
+1. Vercel → **Storage** → **Create** → **Blob**, then **Connect Project**. Vercel injects `BLOB_READ_WRITE_TOKEN` into the project automatically.
+2. Locally: `npx vercel env pull .env.local` to copy the token down, or paste it in by hand.
+
+Then `npm install` (the `@vercel/blob` package is already in `package.json`).
+
+Without the token the upload endpoint returns a clear message and the logo field falls back to pasting an image URL — nothing breaks, the automatic path is just unavailable. Uploads are limited to PNG, JPEG, WebP, or SVG under 2MB, checked server-side.
+
+## Brand colour
+
+The interface no longer recolours per brand. Earlier versions rebound `--brand` from each brand's `accent_color`, which meant a client's colour could collide with a status colour or fail contrast against whatever surface it landed on. The palette is now constant, and a brand is identified by its logo.
+
+`accent_color` still exists, scoped to the monogram shown when a brand has no logo — a 20–48px square where contrast is easy to guarantee.
