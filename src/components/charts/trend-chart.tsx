@@ -69,7 +69,9 @@ export function TrendChart({ data, dict }: { data: Row[]; dict: Dictionary }) {
               onClick={() => setTab(t.id)}
               className={cn(
                 "h-7 rounded px-3 text-xs transition-colors",
-                tab === t.id ? "bg-sunken font-medium text-ink" : "text-muted hover:text-ink",
+                tab === t.id
+                  ? "bg-void font-medium text-white"
+                  : "text-muted hover:text-ink",
               )}
             >
               {t.label}
@@ -89,10 +91,11 @@ export function TrendChart({ data, dict }: { data: Row[]; dict: Dictionary }) {
               minTickGap={24}
             />
             <Tooltip
-              cursor={{ stroke: "var(--line-strong)" }}
+              cursor={{ stroke: "var(--brand)", strokeOpacity: 0.4, strokeWidth: 2 }}
               contentStyle={{
-                borderRadius: 8,
+                borderRadius: 10,
                 border: "1px solid var(--line)",
+                boxShadow: "var(--shadow-raised)",
                 fontSize: 12,
                 fontFamily: "var(--font-mono)",
               }}
@@ -137,7 +140,7 @@ export function TrendChart({ data, dict }: { data: Row[]; dict: Dictionary }) {
                   name={dict.metrics.reach}
                   stroke="var(--brand)"
                   fill="var(--brand)"
-                  fillOpacity={0.08}
+                  fillOpacity={0.12}
                   strokeWidth={1.5}
                 />
                 <Line

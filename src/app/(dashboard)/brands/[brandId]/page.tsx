@@ -80,7 +80,7 @@ export default async function BrandPage({ params }: { params: Promise<{ brandId:
         {role !== "VIEWER" && (
           <Link
             href={`/campaigns/new?brand=${brand.id}`}
-            className="h-9 shrink-0 rounded-md bg-brand px-4 text-sm font-medium leading-9 text-brand-contrast"
+            className="h-9 shrink-0 btn-primary rounded-md px-4 text-sm font-semibold leading-9"
           >
             {dict.campaign.newCampaign}
           </Link>
@@ -105,7 +105,7 @@ export default async function BrandPage({ params }: { params: Promise<{ brandId:
               const day = byCampaign.get(campaign.id);
               const band = indexBand(day?.prominenceIndex ?? 0);
               return (
-                <li key={campaign.id} className="card p-5 transition-shadow hover:shadow-[var(--shadow-raised)]">
+                <li key={campaign.id} className="card card-interactive p-5">
                   <Link href={`/campaigns/${campaign.id}`} className="font-medium hover:underline">
                     {campaign.name}
                   </Link>

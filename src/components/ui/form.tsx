@@ -34,7 +34,7 @@ export function Field({
 }
 
 const control =
-  "h-10 w-full rounded-md border border-line bg-surface px-3 text-sm outline-none focus:border-brand";
+  "h-10 w-full rounded-md border border-line bg-surface px-3 text-sm transition-colors outline-none focus:border-brand focus:bg-surface";
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(control, props.className)} />;
@@ -73,7 +73,7 @@ export function SubmitButton({
       disabled={pending}
       className={cn(
         "h-9 rounded-md px-4 text-sm font-medium transition-opacity disabled:opacity-50",
-        variant === "primary" && "bg-ink text-white",
+        variant === "primary" && "btn-primary",
         variant === "ghost" && "border border-line text-ink hover:bg-sunken",
         variant === "danger" && "border border-line text-critical hover:bg-sunken",
         className,

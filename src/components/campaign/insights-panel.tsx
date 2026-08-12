@@ -13,7 +13,7 @@ const KIND_ICON = {
 
 const TONE_ACCENT = {
   positive: "before:bg-positive",
-  neutral: "before:bg-line-strong",
+  neutral: "before:bg-brand/50",
   warning: "before:bg-warning",
   critical: "before:bg-critical",
 } as const;

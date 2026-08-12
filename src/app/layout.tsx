@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Inter_Tight, IBM_Plex_Mono, Assistant } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Assistant } from "next/font/google";
 
 import { getLocale } from "@/lib/i18n";
 import "./globals.css";
 
-const sans = Inter_Tight({
+/**
+ * Archivo rather than another neutral grotesk: it has a genuinely wide weight
+ * range and slightly condensed proportions, so headings can run heavy and
+ * tight without a second display family. In a table-dense tool that keeps the
+ * font payload small while still giving the type a voice.
+ */
+const sans = Archivo({
   subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-sans-latin",
   display: "swap",
 });

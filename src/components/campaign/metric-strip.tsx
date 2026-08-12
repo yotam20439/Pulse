@@ -26,6 +26,12 @@ function Spark({ points }: { points: number[] }) {
 
   return (
     <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="mt-2 h-5 w-full" aria-hidden>
+      <path
+        d={`${d} L 100 20 L 0 20 Z`}
+        fill="var(--brand)"
+        fillOpacity="0.07"
+        stroke="none"
+      />
       <path d={d} fill="none" stroke="var(--brand)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
     </svg>
   );

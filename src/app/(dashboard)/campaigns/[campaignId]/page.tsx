@@ -137,7 +137,7 @@ export default async function CampaignPage({
               </Link>
               <Link
                 href={`/campaigns/${campaign.id}/settings`}
-                className="h-9 rounded-md bg-brand px-4 text-sm font-medium leading-9 text-brand-contrast"
+                className="h-9 btn-primary rounded-md px-4 text-sm font-semibold leading-9"
               >
                 {dict.campaign.edit}
               </Link>

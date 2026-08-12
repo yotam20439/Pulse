@@ -21,7 +21,7 @@ export function PlatformBadge({ platform, className }: { platform: PlatformName;
     <span
       title={platform.toLowerCase()}
       className={cn(
-        "tnum inline-flex h-5 w-7 items-center justify-center rounded border border-line text-[11px] font-medium text-ink-soft",
+        "tnum inline-flex h-5 w-7 items-center justify-center rounded bg-sunken text-[10px] font-semibold tracking-tight text-ink-soft",
         className,
       )}
     >

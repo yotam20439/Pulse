@@ -32,18 +32,21 @@ export default async function SignInPage({
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <div className="on-void flex min-h-dvh items-center justify-center bg-void px-6">
+      <div className="w-full max-w-sm text-white">
         <div className="flex items-center justify-between">
-          <p className="tnum text-sm font-semibold tracking-tight">PULSE</p>
-          <LocaleSwitcher locale={locale} />
+          <p className="flex items-center gap-2.5 text-sm font-bold tracking-[-0.03em] text-white">
+            <span className="pulse-dot" aria-hidden />
+            PULSE
+          </p>
+          <LocaleSwitcher locale={locale} tone="dark" />
         </div>
-        <h1 className="mt-6 text-2xl font-semibold">{dict.auth.title}</h1>
-        <p className="mt-2 text-sm text-muted">{dict.auth.subtitle}</p>
+        <h1 className="mt-8 text-3xl font-bold tracking-[-0.03em]">{dict.auth.title}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-white/55">{dict.auth.subtitle}</p>
 
         <form action={authenticate} className="mt-6 space-y-4">
           <div>
-            <label htmlFor="email" className="eyebrow">
+            <label htmlFor="email" className="eyebrow text-white/45">
               {dict.auth.email}
             </label>
             <input
@@ -53,12 +56,12 @@ export default async function SignInPage({
               required
               autoComplete="email"
               autoFocus
-              className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
+              className="mt-1.5 h-11 w-full rounded-md border border-white/15 bg-white/5 px-3 text-sm text-white outline-none transition-colors focus:border-lime/60"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="eyebrow">
+            <label htmlFor="password" className="eyebrow text-white/45">
               {dict.auth.password}
             </label>
             <input
@@ -67,25 +70,25 @@ export default async function SignInPage({
               type="password"
               required
               autoComplete="current-password"
-              className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
+              className="mt-1.5 h-11 w-full rounded-md border border-white/15 bg-white/5 px-3 text-sm text-white outline-none transition-colors focus:border-lime/60"
             />
           </div>
 
           {error && (
-            <p className="rounded-md border border-line bg-surface p-3 text-sm text-critical">
+            <p className="rounded-md border border-critical/40 bg-critical/10 p-3 text-sm text-white">
               {dict.auth.failed}
             </p>
           )}
 
           <button
             type="submit"
-            className="h-10 w-full rounded-md bg-ink px-4 text-sm font-medium text-white"
+            className="h-11 w-full rounded-md bg-lime px-4 text-sm font-semibold text-void transition-transform active:scale-[0.99]"
           >
             {dict.auth.submit}
           </button>
         </form>
 
-        <p className="mt-6 text-xs text-muted">{dict.auth.forgot}</p>
+        <p className="mt-8 text-xs text-white/40">{dict.auth.forgot}</p>
       </div>
     </div>
   );

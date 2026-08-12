@@ -62,7 +62,7 @@ export function ContributionTable({
     <div className="overflow-x-auto card">
       <table className="w-full min-w-[52rem] text-sm">
         <thead>
-          <tr className="border-b border-line">
+          <tr className="data-head">
             <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.creators}</th>
             <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.delivered}</th>
             {COLUMNS.map((col) => {
@@ -88,7 +88,7 @@ export function ContributionTable({
         </thead>
         <tbody>
           {sorted.map((row) => (
-            <tr key={row.participantId} className="border-b border-line last:border-0 hover:bg-sunken">
+            <tr key={row.participantId} className="data-row transition-colors hover:bg-sunken/60">
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2.5">
                   <PlatformBadge platform={row.platform} />

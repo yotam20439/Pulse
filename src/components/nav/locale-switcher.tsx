@@ -26,8 +26,8 @@ export function LocaleSwitcher({ locale, tone = "light" }: { locale: Locale; ton
               "h-6 rounded px-2 text-xs font-medium transition-colors",
               locale === option.value
                 ? tone === "dark"
-                  ? "bg-white/15 text-white"
-                  : "bg-sunken text-ink"
+                  ? "bg-lime/15 text-lime"
+                  : "bg-void text-white"
                 : tone === "dark"
                   ? "text-white/50 hover:text-white"
                   : "text-muted hover:text-ink",

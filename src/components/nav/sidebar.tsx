@@ -18,6 +18,13 @@ type BrandItem = {
   role: BrandRole;
 };
 
+/**
+ * The rail is the one deep-violet surface in the app, and the only place Acid
+ * Lime is legible enough to use as a marker. The active item gets a lime spine
+ * on its leading edge — it reads at a glance from across a desk, which is the
+ * whole job of a nav indicator, and it costs nothing in contrast because it
+ * carries no text.
+ */
 export function Sidebar({
   brands,
   user,
@@ -36,10 +43,25 @@ export function Sidebar({
     { href: "/influencers", label: dict.nav.influencers, icon: Users },
   ];
 
+  const itemClass = (active: boolean) =>
+    cn(
+      "group relative flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors",
+      active ? "bg-white/[0.07] text-white" : "text-white/70 hover:bg-white/[0.04] hover:text-white",
+    );
+
+  const Spine = ({ active }: { active: boolean }) =>
+    active ? (
+      <span
+        aria-hidden
+        className="absolute inset-y-1.5 start-0 w-0.5 rounded-full bg-lime"
+      />
+    ) : null;
+
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-e border-line bg-ink text-white/75 lg:flex">
-      <div className="flex h-14 items-center gap-2 px-5">
-        <span className="tnum text-sm font-semibold tracking-tight text-white">PULSE</span>
+    <aside className="on-void hidden w-64 shrink-0 flex-col border-e border-white/5 bg-void lg:flex">
+      <div className="flex h-14 items-center gap-2.5 px-5">
+        <span className="pulse-dot" aria-hidden />
+        <span className="text-sm font-bold tracking-[-0.03em] text-white">PULSE</span>
       </div>
 
       <nav className="px-3 py-1">
@@ -50,20 +72,21 @@ export function Sidebar({
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={cn(
-                "relative flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors",
-                active ? "bg-white/10 text-white" : "hover:bg-white/5 hover:text-white",
-              )}
+              className={itemClass(active)}
             >
-              <Icon className="size-4 shrink-0" aria-hidden />
+              <Spine active={active} />
+              <Icon
+                className={cn("size-4 shrink-0 transition-colors", active && "text-lime")}
+                aria-hidden
+              />
               <span className="truncate">{label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        <p className="eyebrow px-3 py-2 text-white/40">
+      <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+        <p className="eyebrow px-3 py-2 text-white/35">
           {dict.nav.brands} {brands.length > 0 && `(${brands.length})`}
         </p>
 
@@ -78,20 +101,20 @@ export function Sidebar({
                 key={brand.id}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "group flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors",
-                  active ? "bg-white/10 text-white" : "hover:bg-white/5 hover:text-white",
-                )}
+                className={itemClass(active)}
               >
-                {/* The brand's own colour is the only saturated pixel in the rail. */}
+                <Spine active={active} />
+                {/* The brand's own colour, at full saturation against the
+                    violet field — the only place each client is identifiable
+                    without reading. */}
                 <span
                   aria-hidden
-                  className="size-2 shrink-0 rounded-full ring-2 ring-transparent transition-all group-hover:ring-white/10"
+                  className="size-2 shrink-0 rounded-full transition-transform group-hover:scale-125"
                   style={{ background: brand.accentColor }}
                 />
                 <span className="truncate">{brand.name}</span>
                 {brand.role !== "VIEWER" && (
-                  <span className="eyebrow ms-auto text-white/30">
+                  <span className="eyebrow ms-auto text-white/25">
                     {brand.role === "BRAND_ADMIN" ? "adm" : "ed"}
                   </span>
                 )}
@@ -102,12 +125,16 @@ export function Sidebar({
       </div>
 
       {isAdmin && (
-        <div className="border-t border-white/10 p-3">
-          <Link
-            href="/settings/people"
-            className="flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors hover:bg-white/5 hover:text-white"
-          >
-            <Settings className="size-4" aria-hidden />
+        <div className="border-t border-white/5 p-3">
+          <Link href="/settings/people" className={itemClass(pathname.startsWith("/settings"))}>
+            <Spine active={pathname.startsWith("/settings")} />
+            <Settings
+              className={cn(
+                "size-4 transition-colors",
+                pathname.startsWith("/settings") && "text-lime",
+              )}
+              aria-hidden
+            />
             {dict.nav.settings}
           </Link>
         </div>

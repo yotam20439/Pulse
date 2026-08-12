@@ -265,7 +265,7 @@ export default async function CampaignSettingsPage({
               className="mt-1.5 h-10 w-full rounded-md border border-line bg-surface px-3 text-sm"
             />
           </div>
-          <button type="submit" className="h-9 rounded-md bg-ink px-4 text-sm font-medium text-white">
+          <button type="submit" className="h-9 btn-primary rounded-md px-4 text-sm font-semibold">
             {dict.campaign.setTarget}
           </button>
         </form>

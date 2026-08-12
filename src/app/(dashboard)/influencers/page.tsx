@@ -101,7 +101,7 @@ export default async function InfluencersPage() {
           <div className="card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line">
+                <tr className="data-head">
                   <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.creators}</th>
                   <th className="eyebrow px-4 py-3 text-start font-normal">{dict.common.accounts}</th>
                   <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.followers}</th>
@@ -120,7 +120,7 @@ export default async function InfluencersPage() {
                       : null;
 
                   return (
-                    <tr key={creator.id} className="data-row hover:bg-sunken">
+                    <tr key={creator.id} className="data-row transition-colors hover:bg-sunken/60">
                       <td className="px-4 py-3">
                         <Link
                           href={`/influencers/${creator.id}`}

@@ -65,7 +65,7 @@ export function PostTable({ posts, dict }: { posts: PostRow[]; dict: Dictionary 
             onClick={() => setOnlyIssues((v) => !v)}
             className={cn(
               "h-7 rounded px-3 text-xs transition-colors",
-              onlyIssues ? "bg-sunken font-medium text-ink" : "text-muted hover:text-ink",
+              onlyIssues ? "bg-void font-medium text-white" : "text-muted hover:text-ink",
             )}
           >
             {onlyIssues ? dict.campaign.showAll : dict.campaign.showIssues}
@@ -76,7 +76,7 @@ export function PostTable({ posts, dict }: { posts: PostRow[]; dict: Dictionary 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[48rem] text-sm">
           <thead>
-            <tr className="border-b border-line">
+            <tr className="data-head">
               <th className="eyebrow px-4 py-3 text-start font-normal">{dict.metrics.posts}</th>
               <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.views}</th>
               <th className="eyebrow px-4 py-3 text-end font-normal">{dict.metrics.reach}</th>
@@ -90,7 +90,7 @@ export function PostTable({ posts, dict }: { posts: PostRow[]; dict: Dictionary 
             {rows.map((post) => {
               const status = STATUS_COPY[post.collectionStatus] ?? STATUS_COPY.PENDING;
               return (
-                <tr key={post.id} className="border-b border-line last:border-0 hover:bg-sunken">
+                <tr key={post.id} className="data-row transition-colors hover:bg-sunken/60">
                   <td className="max-w-xs px-4 py-3">
                     <div className="flex items-start gap-2.5">
                       <PlatformBadge platform={post.platform} className="mt-0.5" />

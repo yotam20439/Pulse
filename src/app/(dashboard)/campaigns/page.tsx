@@ -89,7 +89,7 @@ export default async function CampaignsPage() {
             <div className="overflow-hidden card overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-line">
+                  <tr className="data-head">
                     <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.campaigns}</th>
                     <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.brands}</th>
                     <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.status}</th>
@@ -104,7 +104,7 @@ export default async function CampaignsPage() {
                   {groupRows.map((row) => {
                     const score = scoreFor.get(row.id);
                     return (
-                      <tr key={row.id} className="border-b border-line last:border-0 hover:bg-sunken">
+                      <tr key={row.id} className="data-row transition-colors hover:bg-sunken/60">
                         <td className="px-4 py-3">
                           <Link href={`/campaigns/${row.id}`} className="font-medium hover:underline">
                             {row.name}

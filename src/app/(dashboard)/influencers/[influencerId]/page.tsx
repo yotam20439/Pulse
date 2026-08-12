@@ -238,7 +238,7 @@ export default async function CreatorPage({
           <div className="card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line">
+                <tr className="data-head">
                   <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.campaigns}</th>
                   <th className="eyebrow px-4 py-3 text-start font-normal">{dict.nav.brands}</th>
                   <th className="eyebrow px-4 py-3 text-start font-normal">{dict.campaign.status}</th>
@@ -249,7 +249,7 @@ export default async function CreatorPage({
               </thead>
               <tbody>
                 {history.map((row) => (
-                  <tr key={row.campaignId} className="data-row hover:bg-sunken">
+                  <tr key={row.campaignId} className="data-row transition-colors hover:bg-sunken/60">
                     <td className="px-4 py-3">
                       <Link href={`/campaigns/${row.campaignId}`} className="font-medium hover:underline">
                         {row.campaignName}
