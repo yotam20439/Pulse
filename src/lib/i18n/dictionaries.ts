@@ -9,8 +9,8 @@
  */
 
 export const en = {
-  locale: "en",
-  dir: "ltr",
+  locale: "en" as string,
+  dir: "ltr" as string,
   localeName: "English",
 
   status: {
@@ -37,6 +37,19 @@ export const en = {
     campaignCount: "campaigns",
     export: "Export CSV",
     activity: "Activity",
+    archiveHint: "Archiving hides the brand without touching its campaigns or history.",
+    newBrand: "New brand",
+    name: "Brand name",
+    industry: "Industry",
+    slug: "Slug",
+    slugHint: "Left blank, it's derived from the name.",
+    accent: "Accent colour",
+    baseline: "Baseline monthly impressions",
+    baselineHint: "The Prominence Index scores campaigns against this.",
+    save: "Save brand",
+    create: "Create brand",
+    logoPreview: "Logo",
+    monogramFallback: "Monogram fallback",
   },
 
   nav: {
@@ -379,7 +392,7 @@ brandHasCampaignsTick: "Tick the box below to delete them too.",
     cancel: "Cancel",
     accounts: "Accounts",
   },
-} as const;
+};
 
 export type Dictionary = typeof en;
 
@@ -412,6 +425,19 @@ export const he: Dictionary = {
     campaignCount: "קמפיינים",
     export: "ייצוא CSV",
     activity: "פעילות",
+    archiveHint: "העברה לארכיון מסתירה את המותג מבלי לפגוע בקמפיינים או בהיסטוריה.",
+    newBrand: "מותג חדש",
+    name: "שם המותג",
+    industry: "תחום",
+    slug: "מזהה כתובת",
+    slugHint: "אם יישאר ריק, ייגזר מהשם.",
+    accent: "צבע מזהה",
+    baseline: "בסיס הופעות חודשי",
+    baselineHint: "מדד הבולטות מנקד קמפיינים ביחס לערך הזה.",
+    save: "שמירת מותג",
+    create: "יצירת מותג",
+    logoPreview: "לוגו",
+    monogramFallback: "מונוגרמה כברירת מחדל",
   },
 
   nav: {

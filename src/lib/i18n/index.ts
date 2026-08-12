@@ -3,6 +3,7 @@ import { dictionaries, type Dictionary, type Locale } from "./dictionaries";
 
 export const LOCALE_COOKIE = "pulse_locale";
 export type { Dictionary, Locale };
+export { t } from "./dictionaries";
 
 /**
  * Locale comes from a cookie rather than the URL.
