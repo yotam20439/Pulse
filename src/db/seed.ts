@@ -317,7 +317,7 @@ async function main() {
 
     // Draft and scheduled campaigns have no live posts yet — that is the point
     // of seeding them: the UI has to handle a campaign with zero data.
-    if (blueprint.status === "DRAFT" || blueprint.status === "SCHEDULED") continue;
+    if (["DRAFT", "READY", "SCHEDULED"].includes(blueprint.status)) continue;
 
     const daysLive = Math.min(30, Math.max(1, Math.floor((Date.now() - startDate.getTime()) / 86_400_000)));
     const campaignDaily = new Map<string, {
