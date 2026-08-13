@@ -178,7 +178,7 @@ export default async function InfluencersPage() {
                             type="number"
                             align="end"
                             value={primary.followers}
-                            format={(v) => formatCount(v as number)}
+                            format="count"
                           />
                         ) : (
                           formatCount(creator.totalFollowers)
@@ -194,7 +194,7 @@ export default async function InfluencersPage() {
                             type="number"
                             align="end"
                             value={primary.er}
-                            format={(v) => formatPercent(v as number)}
+                            format="percent"
                           />
                         ) : (
                           formatPercent(weightedEr)

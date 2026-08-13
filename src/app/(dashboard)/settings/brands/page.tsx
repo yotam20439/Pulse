@@ -131,7 +131,7 @@ export default async function BrandsSettingsPage() {
                       type="number"
                       align="end"
                       value={brand.baselineMonthlyImpressions}
-                      format={(v) => formatCount(v as number)}
+                      format="count"
                     />
                   </td>
 

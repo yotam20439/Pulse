@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Pencil, X } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatCount, formatPercent } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type ActionState = { error?: string; ok?: string };
@@ -20,6 +20,12 @@ type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
  * Enter saves, Escape reverts — the shortcuts people already expect from
  * spreadsheets, which is the mental model for editing a cell in a table.
  */
+function display(value: string | number | null, format: "raw" | "count" | "percent") {
+  if (format === "count") return formatCount(value as number | null);
+  if (format === "percent") return formatPercent(value as number | null);
+  return value ?? "—";
+}
+
 export function EditableCell({
   action,
   hidden,
@@ -27,7 +33,7 @@ export function EditableCell({
   value,
   type = "text",
   align = "start",
-  format,
+  format = "raw",
   className,
 }: {
   action: (formData: FormData) => void | Promise<void>;
@@ -36,8 +42,13 @@ export function EditableCell({
   value: string | number | null;
   type?: "text" | "number" | "url";
   align?: "start" | "end";
-  /** Display formatting for the read-only state. */
-  format?: (v: string | number | null) => string;
+  /**
+   * How to render the read-only value. A string rather than a callback: props
+   * cross the server/client boundary and are serialised, so a formatter
+   * function would throw "Functions cannot be passed directly to Client
+   * Components" at render time.
+   */
+  format?: "raw" | "count" | "percent";
   className?: string;
 }) {
   const [editing, setEditing] = useState(false);
@@ -58,7 +69,7 @@ export function EditableCell({
           className,
         )}
       >
-        <span>{format ? format(value) : (value ?? "—")}</span>
+        <span>{display(value, format)}</span>
         <button
           type="button"
           onClick={() => {
