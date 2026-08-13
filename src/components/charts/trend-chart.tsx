@@ -43,7 +43,7 @@ export function TrendChart({ data, dict }: { data: Row[]; dict: Dictionary }) {
 
   if (data.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-line-strong bg-surface p-10 text-center text-sm text-muted">
+      <div className="empty text-sm text-muted">
 {dict.campaign.noRollups}
       </div>
     );

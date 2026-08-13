@@ -52,7 +52,7 @@ export function ContributionTable({
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-line-strong bg-surface p-8 text-center text-sm text-muted">
+      <p className="empty text-sm text-muted">
         {dict.campaign.noCreators}
       </p>
     );

@@ -57,7 +57,7 @@ export default async function BrandPage({ params }: { params: Promise<{ brandId:
     // Re-binding --brand here is what tints the accent rail, the active nav
     // item, and every primary chart series on this page.
     <div className="space-y-8">
-      <header className="flex items-start justify-between gap-6">
+      <header className="page-header flex items-start justify-between gap-6">
         <div className="flex items-start gap-4">
           <BrandMark
             name={brand.name}
@@ -94,9 +94,9 @@ export default async function BrandPage({ params }: { params: Promise<{ brandId:
       )}
 
       <section>
-        <h2 className="eyebrow mb-3">{dict.campaign.live}</h2>
+        <h2 className="section-head eyebrow mb-3">{dict.campaign.live}</h2>
         {list.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-line-strong bg-surface p-8 text-center text-sm text-muted">
+          <p className="empty text-sm text-muted">
             {dict.campaign.noCampaigns}
           </p>
         ) : (

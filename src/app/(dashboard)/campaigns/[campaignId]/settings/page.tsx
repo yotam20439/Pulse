@@ -117,7 +117,7 @@ export default async function CampaignSettingsPage({
         </h2>
 
         {roster.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-line-strong bg-surface p-6 text-sm text-muted">
+          <p className="empty text-sm text-muted">
             {dict.campaign.noCreators}
           </p>
         ) : (

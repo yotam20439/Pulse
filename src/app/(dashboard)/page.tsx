@@ -54,9 +54,11 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow">{t(dict.common.across, { n: new Set(rows.map((r) => r.brandName)).size })}</p>
-        <h1 className="mt-1 text-2xl font-semibold">{dict.nav.campaigns}</h1>
+      <header className="page-header">
+        <p className="eyebrow">
+          {t(dict.common.across, { n: new Set(rows.map((r) => r.brandName)).size })}
+        </p>
+        <h1 className="mt-1.5 text-3xl font-bold tracking-[-0.03em]">{dict.nav.overview}</h1>
       </header>
 
       <div className="card overflow-hidden">
@@ -71,7 +73,7 @@ export default async function OverviewPage() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="data-row transition-colors hover:bg-sunken/60">
+              <tr key={r.id} className="data-row">
                 <td className="px-4 py-3">
                   <Link href={`/campaigns/${r.id}`} className="font-medium hover:underline">
                     {r.name}

@@ -21,8 +21,8 @@ export default async function SettingsLayout({ children }: { children: React.Rea
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{dict.nav.settings}</h1>
+      <header className="page-header">
+        <h1 className="text-3xl font-bold tracking-[-0.03em]">{dict.nav.settings}</h1>
         <nav className="mt-4 flex gap-1 border-b border-line">
           {tabs.map((tab) => (
             <Link

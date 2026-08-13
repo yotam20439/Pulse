@@ -2,10 +2,12 @@ import Link from "next/link";
 import { desc, eq, inArray } from "drizzle-orm";
 
 import { BrandMark } from "@/components/brand-mark";
+import { EditableCell } from "@/components/forms/inline-edit";
 import { StatusPill } from "@/components/status-pill";
 import { OwnerBadge } from "@/components/owner-badge";
 import { db } from "@/db";
 import { brands, campaignMetricsHistory, campaigns, users } from "@/db/schema";
+import { updateCampaignField } from "@/lib/actions/entities";
 import { accessibleBrandIds, requireUser } from "@/lib/rbac";
 import { getDictionary } from "@/lib/i18n";
 import { formatMoney } from "@/lib/utils";
@@ -76,7 +78,12 @@ export default async function CampaignsPage() {
 
   return (
     <div className="space-y-10">
-      <h1 className="text-2xl font-semibold">{dict.nav.campaigns}</h1>
+      <header className="page-header">
+        <p className="eyebrow">{dict.nav.campaigns}</p>
+        <h1 className="mt-1.5 text-3xl font-bold tracking-[-0.03em]">
+          {rows.length} {dict.nav.campaigns.toLowerCase()}
+        </h1>
+      </header>
 
       {GROUPS.map((group) => {
         const groupRows = rows.filter((r) => (group.statuses as readonly string[]).includes(r.status));
@@ -84,7 +91,7 @@ export default async function CampaignsPage() {
 
         return (
           <section key={group.key} className="space-y-3">
-            <h2 className="eyebrow">
+            <h2 className="section-head eyebrow">
               {group.label} ({groupRows.length})
             </h2>
             <div className="overflow-hidden card overflow-hidden">
@@ -105,11 +112,23 @@ export default async function CampaignsPage() {
                   {groupRows.map((row) => {
                     const score = scoreFor.get(row.id);
                     return (
-                      <tr key={row.id} className="data-row transition-colors hover:bg-sunken/60">
+                      <tr key={row.id} className="data-row group">
                         <td className="px-4 py-3">
-                          <Link href={`/campaigns/${row.id}`} className="font-medium hover:underline">
-                            {row.name}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/campaigns/${row.id}`}
+                              className="font-medium hover:text-brand hover:underline"
+                            >
+                              {row.name}
+                            </Link>
+                            <EditableCell
+                              action={updateCampaignField}
+                              hidden={{ campaignId: row.id }}
+                              name="name"
+                              value={row.name}
+                              className="[&>span:first-child]:hidden"
+                            />
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-ink-soft">
                           <span className="inline-flex items-center gap-2">

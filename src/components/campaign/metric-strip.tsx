@@ -63,7 +63,7 @@ export function MetricStrip({
   ];
 
   return (
-    <dl className="card grid grid-cols-2 overflow-hidden sm:grid-cols-4 xl:grid-cols-8">
+    <dl className="tile grid grid-cols-2 overflow-hidden rounded-[var(--radius)] sm:grid-cols-4 xl:grid-cols-8">
       {items.map((item, i) => (
         <div
           key={item.label}

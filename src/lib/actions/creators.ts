@@ -458,3 +458,63 @@ export async function deleteCreator(
   revalidatePath("/influencers");
   redirect("/influencers");
 }
+
+/**
+ * Single-field edits from a list row. Kept separate from the full form so an
+ * inline save can't accidentally blank the fields it doesn't include — a
+ * partial FormData through the main update path would do exactly that.
+ */
+export async function updateCreatorField(formData: FormData) {
+  await assertCanEditRoster();
+
+  const influencerId = String(formData.get("influencerId") ?? "");
+  if (!influencerId) return;
+
+  const displayName = formData.get("displayName");
+  const tags = formData.get("tags");
+
+  const patch: Record<string, unknown> = {};
+  if (typeof displayName === "string" && displayName.trim()) {
+    patch.displayName = displayName.trim();
+  }
+  if (typeof tags === "string") {
+    patch.tags = tags.split(/[,\s]+/).map((t) => t.trim().toLowerCase()).filter(Boolean);
+  }
+
+  if (Object.keys(patch).length === 0) return;
+
+  await db.update(influencers).set(patch).where(eq(influencers.id, influencerId));
+  revalidatePath("/influencers");
+  revalidatePath(`/influencers/${influencerId}`);
+}
+
+/** Inline stats edit from the roster list. */
+export async function updateAccountField(formData: FormData) {
+  await assertCanEditRoster();
+
+  const accountId = String(formData.get("accountId") ?? "");
+  const [account] = await db
+    .select()
+    .from(influencerAccounts)
+    .where(eq(influencerAccounts.id, accountId));
+  if (!account) return;
+
+  const patch: Record<string, unknown> = {};
+
+  const followers = Number(formData.get("followerCount"));
+  if (Number.isFinite(followers) && followers > 0) patch.followerCount = Math.round(followers);
+
+  const er = Number(formData.get("baselineEngagementRate"));
+  if (Number.isFinite(er) && er > 0 && er < 1) patch.baselineEngagementRate = er;
+
+  if (Object.keys(patch).length === 0) return;
+
+  // A hand edit downgrades the source: these numbers are no longer whatever
+  // the platform last returned, and the score weights them accordingly.
+  patch.statsSource = "manual";
+  patch.followersSyncedAt = new Date();
+
+  await db.update(influencerAccounts).set(patch).where(eq(influencerAccounts.id, accountId));
+  revalidatePath("/influencers");
+  revalidatePath(`/influencers/${account.influencerId}`);
+}

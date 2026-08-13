@@ -57,7 +57,7 @@ export function IndexTile({
   const needleY = 62 + Math.sin(rad) * (R - 12);
 
   return (
-    <div className="card p-5">
+    <div className="card card-accent p-5 pt-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="eyebrow">{label}</p>

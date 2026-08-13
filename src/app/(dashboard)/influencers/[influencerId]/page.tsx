@@ -64,7 +64,7 @@ export default async function CreatorPage({
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-start justify-between gap-6">
+      <header className="page-header flex flex-wrap items-start justify-between gap-6">
         <div>
           <p className="eyebrow">{dict.nav.influencers}</p>
           <h1 className="mt-1 text-2xl font-semibold">{creator.displayName}</h1>
@@ -127,9 +127,9 @@ export default async function CreatorPage({
 
       {/* Observed vs claimed. This contrast is the reason the page exists. */}
       <section className="space-y-3">
-        <h2 className="eyebrow">{dict.creator.measured}</h2>
+        <h2 className="section-head eyebrow">{dict.creator.measured}</h2>
         {observed.measuredCount === 0 ? (
-          <p className="rounded-lg border border-dashed border-line-strong bg-surface p-6 text-sm text-muted">
+          <p className="empty text-sm text-muted">
             {dict.creator.noMeasured}
           </p>
         ) : (
@@ -157,7 +157,7 @@ export default async function CreatorPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">{dict.creator.accounts}</h2>
+        <h2 className="section-head eyebrow">{dict.creator.accounts}</h2>
 
         <ul className="space-y-3">
           {creator.accounts.map((account) => (
@@ -226,12 +226,12 @@ export default async function CreatorPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">
+        <h2 className="section-head eyebrow">
           {dict.creator.history} ({history.length})
         </h2>
 
         {history.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-line-strong bg-surface p-6 text-sm text-muted">
+          <p className="empty text-sm text-muted">
             {dict.creator.noHistory}
           </p>
         ) : (
@@ -288,7 +288,7 @@ export default async function CreatorPage({
         )}
       </section>
       <section className="space-y-3 border-t border-line pt-8">
-        <h2 className="eyebrow">{dict.danger.zone}</h2>
+        <h2 className="section-head eyebrow">{dict.danger.zone}</h2>
         <ConfirmDelete
           action={deleteCreator}
           confirmValue={creator.displayName}

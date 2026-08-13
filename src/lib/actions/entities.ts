@@ -497,3 +497,65 @@ export async function deleteCampaign(_prev: ActionState, formData: FormData): Pr
   });
   redirect(`/brands/${campaign.brandId}`);
 }
+
+/** Single-field brand edit from the settings list. */
+export async function updateBrandField(formData: FormData) {
+  const user = await requireUser();
+  const brandId = String(formData.get("brandId") ?? "");
+  if (!isSuperAdmin(user)) await requireBrandAccess(brandId, "BRAND_ADMIN");
+
+  const patch: Record<string, unknown> = {};
+
+  const name = formData.get("name");
+  if (typeof name === "string" && name.trim()) patch.name = name.trim();
+
+  const industry = formData.get("industry");
+  if (typeof industry === "string") patch.industry = industry.trim() || null;
+
+  const baseline = Number(formData.get("baseline"));
+  if (Number.isFinite(baseline) && baseline > 0) {
+    patch.baselineMonthlyImpressions = Math.round(baseline);
+  }
+
+  const ownerId = formData.get("ownerId");
+  if (typeof ownerId === "string") patch.ownerId = ownerId || null;
+
+  if (Object.keys(patch).length === 0) return;
+
+  await db.update(brands).set(patch).where(eq(brands.id, brandId));
+  await record(user.id, brandId, "brand.update", "brand", brandId, patch);
+  revalidatePath("/settings/brands");
+  revalidatePath(`/brands/${brandId}`);
+  revalidatePath("/", "layout");
+}
+
+/** Single-field campaign edit from a list row. */
+export async function updateCampaignField(formData: FormData) {
+  const campaignId = String(formData.get("campaignId") ?? "");
+  const [existing] = await db
+    .select({ brandId: campaigns.brandId })
+    .from(campaigns)
+    .where(eq(campaigns.id, campaignId));
+  if (!existing) return;
+
+  const { user } = await requireBrandAccess(existing.brandId, "EDITOR");
+
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+
+  const name = formData.get("name");
+  if (typeof name === "string" && name.trim()) patch.name = name.trim();
+
+  const status = formData.get("status");
+  if (typeof status === "string" && status) patch.status = status;
+
+  const budget = Number(formData.get("budget"));
+  if (Number.isFinite(budget) && budget >= 0) patch.budget = String(budget);
+
+  const ownerId = formData.get("ownerId");
+  if (typeof ownerId === "string") patch.ownerId = ownerId || null;
+
+  await db.update(campaigns).set(patch).where(eq(campaigns.id, campaignId));
+  await record(user.id, existing.brandId, "campaign.update", "campaign", campaignId, patch);
+  revalidatePath("/campaigns");
+  revalidatePath(`/campaigns/${campaignId}`);
+}

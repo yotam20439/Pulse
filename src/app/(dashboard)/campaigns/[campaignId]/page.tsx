@@ -84,7 +84,7 @@ export default async function CampaignPage({
 
   return (
     <div className="space-y-8">
-      <header className="space-y-4">
+      <header className="page-header space-y-4">
         <Link
           href={`/brands/${campaign.brandId}`}
           className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-ink"
@@ -196,13 +196,13 @@ export default async function CampaignPage({
 
       <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <section className="min-w-0 space-y-3">
-          <h2 className="eyebrow">{dict.campaign.contribution}</h2>
+          <h2 className="section-head eyebrow">{dict.campaign.contribution}</h2>
           <ContributionTable rows={contribution} currency={campaign.currency} dict={dict} />
         </section>
 
         <div className="space-y-8">
           <section className="space-y-3">
-            <h2 className="eyebrow">{dict.campaign.targets}</h2>
+            <h2 className="section-head eyebrow">{dict.campaign.targets}</h2>
             <div className="card p-5">
               <KpiProgress kpis={kpis} />
             </div>
@@ -210,7 +210,7 @@ export default async function CampaignPage({
 
           {mix.length > 1 && (
             <section className="space-y-3">
-              <h2 className="eyebrow">{dict.campaign.platformMix}</h2>
+              <h2 className="section-head eyebrow">{dict.campaign.platformMix}</h2>
               <div className="card space-y-3 p-5">
                 <div className="flex h-2 overflow-hidden rounded-full bg-sunken">
                   {mix.map((m, i) => (
@@ -247,12 +247,12 @@ export default async function CampaignPage({
       </div>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">{dict.campaign.insights}</h2>
+        <h2 className="section-head eyebrow">{dict.campaign.insights}</h2>
         <InsightsPanel insights={insights} dict={dict} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="eyebrow">{dict.campaign.posts}</h2>
+        <h2 className="section-head eyebrow">{dict.campaign.posts}</h2>
         <PostTable posts={postRows} dict={dict} />
       </section>
     </div>

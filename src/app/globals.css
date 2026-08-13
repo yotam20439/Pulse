@@ -231,3 +231,141 @@ html[lang="he"] body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Depth layer
+ *
+ * The earlier build was flat by default: white cards, hairline borders, one
+ * accent. Flat reads as unfinished on a dense analytics tool, because nothing
+ * tells the eye which surface is primary. These add hierarchy without adding
+ * noise — a graded surface stack, a violet-tinted header band, and section
+ * chrome that separates content groups the way a printed report would.
+ * ------------------------------------------------------------------------- */
+
+@layer components {
+  /* Page header band. Every screen opens on the same violet-tinted gradient,
+     which anchors the layout and stops the content starting mid-air. */
+  .page-header {
+    background: linear-gradient(180deg, var(--surface) 0%, var(--canvas) 100%);
+    border-bottom: 1px solid var(--line);
+    margin: -2rem -1.5rem 0;
+    padding: 2rem 1.5rem 1.75rem;
+  }
+  @media (min-width: 1024px) {
+    .page-header {
+      margin: -2rem -2.5rem 0;
+      padding: 2rem 2.5rem 1.75rem;
+    }
+  }
+
+  /* Cards sit on a graded stack rather than all at one level. */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-raised {
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* A card whose top edge carries the accent — used for the two index tiles
+     and anything else that should read as a headline instrument. */
+  .card-accent {
+    position: relative;
+    overflow: hidden;
+  }
+  .card-accent::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--grape), var(--grape-deep));
+  }
+
+  /* Section heading with a rule that fills the remaining width — cheap, and
+     it does the job a designer would otherwise do with more chrome. */
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+  }
+  .section-head::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+  }
+  html[dir="rtl"] .section-head::after {
+    background: linear-gradient(270deg, var(--line), transparent);
+  }
+
+  /* Table headers: violet-tinted band, sticky so long tables stay readable. */
+  .data-head {
+    position: sticky;
+    top: 3.5rem;
+    z-index: 1;
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .data-head th {
+    padding-block: 0.625rem;
+  }
+
+  /* Zebra striping at very low contrast — enough to track a row across eight
+     columns, not enough to read as decoration. */
+  .data-row:nth-child(even) {
+    background: color-mix(in oklab, var(--surface-sunken) 45%, transparent);
+  }
+  .data-row {
+    border-bottom: 1px solid var(--line);
+    transition: background-color 120ms ease;
+  }
+  .data-row:last-child {
+    border-bottom: 0;
+  }
+  .data-row:hover {
+    background: color-mix(in oklab, var(--grape) 5%, var(--surface));
+  }
+
+  /* Inline edit affordance: controls stay hidden until the row is hovered or
+     something inside it has focus, so a dense table isn't covered in buttons
+     but keyboard users still reach them. */
+  .row-actions {
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  .data-row:hover .row-actions,
+  .data-row:focus-within .row-actions,
+  .group:hover .row-actions,
+  .group:focus-within .row-actions {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .row-actions {
+      opacity: 1;
+    }
+  }
+
+  /* Metric tiles get an inner top highlight, which is what makes a white card
+     read as a surface rather than a hole in the page. */
+  .tile {
+    background: linear-gradient(180deg, var(--surface) 0%, color-mix(in oklab, var(--surface-sunken) 40%, var(--surface)) 100%);
+    border: 1px solid var(--line);
+  }
+
+  /* Empty states deserve structure, not a sentence floating in a box. */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+    background: color-mix(in oklab, var(--surface-sunken) 40%, var(--surface));
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+}
